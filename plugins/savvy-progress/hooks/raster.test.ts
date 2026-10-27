@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { base64, CLEAR, DEFAULT_COLOR, halve, mirror, paint, parseColor, toCells } from './raster'
+import { base64, CLEAR, DEFAULT_COLOR, fade, halve, mirror, paint, parseColor, toCells } from './raster'
 
 // The cells back as [codePoint, foreground, background] triplets.
 const decode = (b64: string): number[][] => {
@@ -83,4 +83,9 @@ test('halve with a shift keeps a two-pixel feature on an odd column whole', () =
   // Unshifted, the 2-pixel feature smears over two cells.
   expect([...halve(p).px]).toEqual([0x000000, 0x000000])
   expect([...halve(p, 1).px]).toEqual([CLEAR, 0x000000, CLEAR])
+})
+
+test('fade mixes painted pixels toward the ground and leaves clear ones', () => {
+  const p = paint(f => f(0, 0, 1, 1, '#ffffff'), 2, 1)
+  expect([...fade(p, 0.5, 0x000000).px]).toEqual([0x808080, CLEAR])
 })
