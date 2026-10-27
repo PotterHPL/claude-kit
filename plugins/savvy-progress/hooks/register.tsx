@@ -2,6 +2,8 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRun, Flow, Panel, Phase, PlannedTask } from '../types'
+import { halve, mirror, paint, toCells } from './raster'
+import type { Cells, Shift } from './raster'
 
 const flow = atom({ plugin: 'savvy-progress', key: 'flow' } as const, null)
 const agents = atom({ plugin: 'savvy-progress', key: 'agents' } as const, [])
@@ -632,6 +634,52 @@ const crab = (x: number, y: number, costume: string, dim = false, isWalking = fa
   return `<g transform="${place}" opacity="${dim ? 0.45 : 1}" shape-rendering="crispEdges"><g class="c-${costume}${isWalking ? ' run' : ''}">${body}${group('la')}${group('lb')}</g></g>`
 }
 
+// --- terminal drawings: the same crabs as pixel art, two pixels to a Raster cell.
+
+// The `terminalCrabs` option: a crab beside each agent (`row`), the running agents'
+// crabs side by side at full size above the list (`stage`), or text only (`off`).
+type CrabMode = 'row' | 'stage' | 'off'
+// Module scope is fine here: register sets it again on every (re)load.
+let crabMode: CrabMode = 'row'
+const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
+
+const CRAB_GRID_H = 28
+// A row crab is the grid at half size, its blocks shifted one pixel so the body,
+// eyes and legs (all on odd columns) stay whole: 16 × 14 pixels, 16 columns by 7 rows.
+const HALF_SHIFT = 1
+const ROW_CRAB = { columns: (CRAB_BOX + HALF_SHIFT + 1) / 2, rows: CRAB_GRID_H / 4 }
+const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
+// Columns a row needs beside its crab before the crab is worth drawing.
+const ROW_TEXT_MIN = 24
+
+// Four frames a second, numbered off the clock so a redraw and a blit agree.
+const FRAME_MS = 250
+const frameAt = (ms: number): number => Math.floor(ms / FRAME_MS) % 4
+
+// The desktop's walk (CRAB_CSS) as frames: the leg pairs lift in turn, the body bobs.
+const walk =
+  (k: number): Shift =>
+  cls =>
+    cls === 'la' ? (k % 2 ? -1 : 0) : cls === 'lb' ? (k % 2 ? 0 : -1) : k % 2 ? 0 : 1
+
+const cellCache = new Map<string, Cells>()
+
+// `frame` null: standing still.
+const crabCells = (costume: string, frame: number | null, isHalf: boolean): Cells => {
+  const id = `${costume}|${frame}|${isHalf}|${isRtl()}`
+  const hit = cellCache.get(id)
+  if (hit) return hit
+  const draw = COSTUMES[costume] ?? ((g: Fill) => crabBody(g))
+  let p = paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
+  if (isHalf) p = halve(p, HALF_SHIFT)
+  if (isRtl()) p = mirror(p)
+  const cells = toCells(p)
+  cellCache.set(id, cells)
+  return cells
+}
+
+const crabKey = (a: AgentRun): string => `crab-${a.id}`
+
 const statusMark = (x: number, y: number, status: string, color: string): string => {
   if (status === 'running') return `<circle class="live" cx="${x}" cy="${y}" r="3.5" fill="${color}"/>`
   if (status === 'done') return `<path d="M${x - 5} ${y}l3.5 3.5 6.5-7" fill="none" stroke="#3B9C5F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
@@ -791,6 +839,7 @@ async function autoOpen($: EngineInterface, key: string): Promise<void> {
 }
 
 export const register: Register = (on, options) => {
+  crabMode = crabModeOf(options.terminalCrabs)
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     lang = await detectLang($, options.language)
@@ -856,6 +905,21 @@ export const register: Register = (on, options) => {
         if (!list.some(a => a.status === 'running')) return
         const at = await $.clock.now()
         await update($, now, () => at)
+      })()
+    })
+    // Walks the running agents' terminal crabs: each frame blitted into its Raster,
+    // no redraw. Where none is mounted (the desktop, a closed panel) the blit is denied.
+    $.clock.every(FRAME_MS, () => {
+      if (crabMode === 'off') return
+      void (async () => {
+        const list = await read($, agents)
+        const running = list.filter(a => a.status === 'running')
+        if (!running.length) return
+        const k = frameAt(await $.clock.now())
+        for (const a of running) {
+          const { cells } = crabCells(costumeOf(a.type), k, crabMode === 'row')
+          await $.ui.blit({ requestId: PANE, key: crabKey(a), cells }).catch(() => undefined)
+        }
       })()
     })
     return started
@@ -1113,9 +1177,25 @@ export const register: Register = (on, options) => {
       )
     }
 
-    // Terminal: the same content in text rows.
+    // Terminal: the same content in text rows, with pixel crabs where the
+    // surface has a Raster and the panel has room for them.
     const cols = Math.max(24, e.props.bodyColumns || 40)
-    const barW = Math.max(6, Math.min(20, cols - 34))
+    const Raster = e.surface === 'terminal' && 'Raster' in ui ? ui.Raster : null
+    const hasRowCrabs = Raster !== null && crabMode === 'row' && cols >= ROW_CRAB.columns + 1 + ROW_TEXT_MIN
+    const stageFits = Math.floor((cols + 1) / (STAGE_CRAB.columns + 1))
+    const hasStage = Raster !== null && crabMode === 'stage' && stageFits > 0 && running.length > 0
+    const textCols = hasRowCrabs ? cols - ROW_CRAB.columns - 1 : cols
+    const barW = Math.max(6, Math.min(20, textCols - 34))
+    const frame = frameAt(at)
+    const crabOf = (a: AgentRun, size: typeof ROW_CRAB) =>
+      Raster && (
+        <Raster
+          key={crabKey(a)}
+          columns={size.columns}
+          rows={size.rows}
+          cells={crabCells(costumeOf(a.type), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
+        />
+      )
     const row = (a: AgentRun) => {
       const tier = tierOf(a.type)
       const color = colorOf(tier)
@@ -1123,8 +1203,8 @@ export const register: Register = (on, options) => {
       const progress = progressOf(a)
       const model = runModel(a)
       const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''} · ` : ''
-      return (
-        <Box key={a.id} flexDirection="column" marginBottom={1}>
+      const lines = (
+        <Box key={a.id} flexDirection="column" marginBottom={1} flexGrow={1}>
           <Box flexDirection="row" gap={1}>
             <Text color={color}>▣</Text>
             <Text bold wrap="truncate-end">
@@ -1147,6 +1227,13 @@ export const register: Register = (on, options) => {
           </Text>
         </Box>
       )
+      if (!hasRowCrabs) return lines
+      return (
+        <Box key={a.id} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1}>
+          {crabOf(a, ROW_CRAB)}
+          {lines}
+        </Box>
+      )
     }
 
     return (
@@ -1160,6 +1247,18 @@ export const register: Register = (on, options) => {
         <Text dimColor>
           ≈{fmtCost(t.cost)} · {fmtTokens(t.tokens)} {s.tokensWord} · {fmtTime(t.time)}
         </Text>
+        {hasStage && !p.isCompact && (
+          <Box flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1} marginTop={1}>
+            {running.slice(0, stageFits).map(a => (
+              <Box key={`stage-${a.id}`} flexDirection="column" width={STAGE_CRAB.columns}>
+                {crabOf(a, STAGE_CRAB)}
+                <Text color={colorOf(tierOf(a.type))} wrap="truncate-end">
+                  {a.description || a.type}
+                </Text>
+              </Box>
+            ))}
+          </Box>
+        )}
         {p.isCompact ? (
           <Text wrap="truncate-end">
             {[...running, ...finished].map(a => (
