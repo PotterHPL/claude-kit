@@ -445,18 +445,25 @@ const bandTrackCells = (f: Flow, width: number, frame: number): Cells => {
   return textCells(cells, cells.length)
 }
 
-// The band's crab: one row, two pixels tall; its legs step while agents work.
-const BAND_CRAB = { top: '.cccc.', legs: ['c.cc.c', '.c..c.'] }
-const bandCrabCells = (isWorking: boolean, frame: number): Cells => {
-  const legs = BAND_CRAB.legs[isWorking ? frame % 2 : 0] ?? ''
-  const clay = hex(CLAY)
-  const cells = [...BAND_CRAB.top].map((top, x): [number, number, number] => {
-    const isTop = top === 'c'
-    const isBottom = legs[x] === 'c'
-    const ch = isTop && isBottom ? '█' : isTop ? '▀' : isBottom ? '▄' : ' '
-    return [ch.codePointAt(0) ?? 0x20, clay, DEFAULT_COLOR]
-  })
-  return textCells(cells, cells.length)
+// The band's spinner: two braille cells, a 4 × 4 field of dots. A snake of four dots runs
+// round its edge, a step a frame (FRAME_MS); standing, the whole edge is lit, faded.
+const SPIN_PATH: [x: number, y: number][] = [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [0, 2], [0, 1]]
+const SPIN_LEN = 4
+// Braille dot bits by column and row within a cell (dots 1-8).
+const BRAILLE_BIT = [
+  [0x01, 0x02, 0x04, 0x40],
+  [0x08, 0x10, 0x20, 0x80],
+]
+const BAND_SPIN_KEY = 'band-spin'
+// The band's own id, as its render hook last saw it: what a blit names to repaint the spinner.
+let bandRequestId = ''
+
+const spinnerCells = (step: number | null): Cells => {
+  const lit = step === null ? SPIN_PATH : Array.from({ length: SPIN_LEN }, (_, i): [number, number] => SPIN_PATH[(step + i) % SPIN_PATH.length] ?? [0, 0])
+  const bits = [0, 0]
+  for (const [x, y] of lit) bits[x >> 1] = (bits[x >> 1] ?? 0) | (BRAILLE_BIT[x & 1]?.[y] ?? 0)
+  const color = step === null ? hex('#7a4a3a') : hex(CLAY)
+  return textCells(bits.map((b): [number, number, number] => [0x2800 + b, color, DEFAULT_COLOR]), 2)
 }
 
 const barText = (f: Flow, width: number): string => {
@@ -1232,12 +1239,17 @@ export const register: Register = (on, options) => {
     // Walks the running agents' terminal crabs: each frame blitted into its Raster,
     // no redraw. Where none is mounted (the desktop, a closed panel) the blit is denied.
     $.clock.every(FRAME_MS, () => {
-      if (crabMode === 'off') return
       void (async () => {
         const list = await read($, agents)
         const running = list.filter(a => a.status === 'running')
         if (!running.length) return
-        const k = frameAt(await $.clock.now())
+        const ms = await $.clock.now()
+        if (bandRequestId) {
+          const { cells } = spinnerCells(Math.floor(ms / FRAME_MS) % SPIN_PATH.length)
+          await $.ui.blit({ requestId: bandRequestId, key: BAND_SPIN_KEY, cells }).catch(() => undefined)
+        }
+        if (crabMode === 'off') return
+        const k = frameAt(ms)
         for (const a of running) {
           const { cells } = crabCells(runCostume(a), k, crabMode === 'row')
           await $.ui.blit({ requestId: PANE, key: crabKey(a), cells }).catch(() => undefined)
@@ -1738,9 +1750,10 @@ export const register: Register = (on, options) => {
     if (e.surface === 'terminal' && 'Raster' in ui) {
       const { Raster } = ui
       const frame = Math.floor((await read($, now)) / 1000) % 2
-      const trackW = Math.max(12, cols - titleW - 24)
+      const trackW = Math.max(12, cols - titleW - 22)
       const track = bandTrackCells(f, trackW, frame)
-      const crab = bandCrabCells(isWorking, frame)
+      bandRequestId = e.requestId
+      const spin = spinnerCells(isWorking ? Math.floor((await read($, now)) / FRAME_MS) % SPIN_PATH.length : null)
       return (
         <Box flexDirection="column">
           <Box flexDirection="row" gap={1}>
@@ -1752,7 +1765,7 @@ export const register: Register = (on, options) => {
             </Box>
             <Raster key="band-track" columns={track.columns} rows={1} cells={track.cells} />
             <Text dimColor>{percent}</Text>
-            <Raster key="band-crab" columns={crab.columns} rows={1} cells={crab.cells} />
+            <Raster key={BAND_SPIN_KEY} columns={spin.columns} rows={1} cells={spin.cells} />
             {crewButton}
             {!isBatch && dismiss}
           </Box>

@@ -59,6 +59,8 @@ test('band any: a batch of agents with no savvy flow shows done out of total', {
   const ui = await $.ui.mount({ plugin: 'savvy-progress', surface: 'terminal', ...BAND })
   expect(await bandText(ui as never)).toContain('Tasks 1/2')
   expect(await ui.find({ type: 'Button', key: 'savvy-dismiss' })).toBeUndefined()
+  // The spinner: two braille cells beside the percent.
+  expect((await ui.find({ type: 'Raster', key: 'band-spin' }))?.props).toMatchObject({ columns: 2, rows: 1 })
 })
 
 test('band savvy: no flow, no band', { options: { band: 'savvy' } }, async ($, on) => {
