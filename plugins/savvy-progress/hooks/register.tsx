@@ -637,6 +637,10 @@ const COSTUMES: Record<string, (f: Fill, t: string) => void> = {
 
 const costumeOf = (type: string): string => (type === 'Explore' ? 'explore' : tierOf(type))
 
+// A run's costume: Explore is the pirate; otherwise the tier it reads as (runTier),
+// so an agent that is not a savvy worker dresses for its model and effort.
+const runCostume = (a: AgentRun): string => (a.type === 'Explore' ? 'explore' : runTier(a))
+
 const CRAB_SCALE = 1.1
 
 // Body and props nest inside `bd` so a prop rides the bob and adds its own motion;
@@ -841,7 +845,7 @@ const agentSvg = (W: number, a: AgentRun, at: number): string => {
   return svg(
     W,
     66,
-    `${rowCrab(W, 0, 14, costumeOf(a.type), false, a.status === 'running')}
+    `${rowCrab(W, 0, 14, runCostume(a), false, a.status === 'running')}
 <text class="t" ${startText(W, 42, 18)} font-family="${FONT}" font-size="13" font-weight="600">${xml(fitText(a.description || a.type, 13, textW))}</text>
 <text ${startText(W, 42, 34)} font-family="${FONT}" font-size="11"><tspan fill="${color}">${xml(tier === 'other' ? a.type : tierWord(tier))}</tspan><tspan class="s">  ${xml(meta.join('  ·  '))}</tspan></text>
 ${steps && stepsW > 30 ? `<text class="t" ${startText(W, 42, 49)} font-family="${FONT}" font-size="11" font-variant-numeric="tabular-nums">${xml(fitText(steps, 11, stepsW))}</text>` : ''}
@@ -871,8 +875,8 @@ ${statusMark(mx(W, W - 8), 16, 'planned', color)}
 
 const compactSvg = (W: number, list: AgentRun[], planned: Planned[], t: ReturnType<typeof totals>): string => {
   const icons = [
-    ...list.filter(a => a.status === 'running').map(a => ({ k: costumeOf(a.type), c: colorOf(tierOf(a.type)), s: 'running', dim: false })),
-    ...list.filter(a => a.status !== 'running').map(a => ({ k: costumeOf(a.type), c: colorOf(tierOf(a.type)), s: a.status, dim: false })),
+    ...list.filter(a => a.status === 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: 'running', dim: false })),
+    ...list.filter(a => a.status !== 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: a.status, dim: false })),
     ...planned.map(p => ({ k: p.tier in TIER_COLOR ? p.tier : 'other', c: colorOf(p.tier), s: 'planned', dim: true })),
   ]
   const fit = Math.max(1, Math.floor((W - 150) / 36))
@@ -1001,7 +1005,7 @@ export const register: Register = (on, options) => {
         if (!running.length) return
         const k = frameAt(await $.clock.now())
         for (const a of running) {
-          const { cells } = crabCells(costumeOf(a.type), k, crabMode === 'row')
+          const { cells } = crabCells(runCostume(a), k, crabMode === 'row')
           await $.ui.blit({ requestId: PANE, key: crabKey(a), cells }).catch(() => undefined)
         }
       })()
@@ -1280,7 +1284,7 @@ export const register: Register = (on, options) => {
           key={crabKey(a)}
           columns={size.columns}
           rows={size.rows}
-          cells={crabCells(costumeOf(a.type), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
+          cells={crabCells(runCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
         />
       )
     const row = (a: AgentRun) => {
