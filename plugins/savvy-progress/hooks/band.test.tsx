@@ -31,3 +31,28 @@ test('desktop: the row is still one Svg', async ($, on) => {
   await session($, on)
   expect(await band($, 'desktop')).toEqual({ svg: 1, title: 0, label: 0 })
 })
+
+test('band any: a batch of agents with no savvy flow shows done out of total', { options: { band: 'any' } }, async ($, on) => {
+  mock.clock(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('turn.complete', () => ({ text: '' }) as never)
+  let n = 0
+  on('agent.spawn', () => ({ model: 'claude-haiku-5-5', agentId: `a${++n}` }))
+  for (const i of [1, 2])
+    await $.agent.spawn({ tool_use_id: `t${i}`, prompt: 'p', description: `work ${i}`, subagentType: 'general-purpose', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
+  await ($.turn.complete as (e: unknown) => Promise<unknown>)({ agentId: 'a1', reason: 'answer', answer: 'ok' })
+  const ui = await $.ui.mount({ plugin: 'savvy-progress', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Tasks 1\/2$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'savvy-dismiss' })).toBeUndefined()
+})
+
+test('band savvy: no flow, no band', { options: { band: 'savvy' } }, async ($, on) => {
+  mock.clock(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('agent.spawn', () => ({ model: 'claude-haiku-5-5', agentId: 'a1' }))
+  // Beneath the plugin, the engine draws an empty band.
+  on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }) as never)
+  await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'work', subagentType: 'general-purpose', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
+  const ui = await $.ui.mount({ plugin: 'savvy-progress', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /Tasks/ })).toBeUndefined()
+})

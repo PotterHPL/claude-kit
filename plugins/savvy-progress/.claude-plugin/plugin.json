@@ -32,6 +32,16 @@
         "always"
       ]
     },
+    "band": {
+      "type": "string",
+      "title": "Band above the prompt",
+      "description": "savvy: only while a savvy flow reports its progress; any: also while a batch of other subagents works, done out of total",
+      "default": "any",
+      "options": [
+        "savvy",
+        "any"
+      ]
+    },
     "terminalCrabs": {
       "type": "string",
       "title": "Crabs in the terminal",

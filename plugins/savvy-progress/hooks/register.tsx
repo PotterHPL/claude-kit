@@ -269,6 +269,32 @@ const label = (f: Flow): string => {
 
 const ratio = (f: Flow): number => (f.isFinished ? 1 : f.total ? f.done / f.total : 0)
 
+// The running batch of agents: the last stretch in which, from one agent's start on, some
+// agent was always running. Agents launched together, or one after another while others
+// work, are one batch; it ends when all of them are done.
+const currentBatch = (list: AgentRun[]): AgentRun[] => {
+  let batch: AgentRun[] = []
+  let end = -Infinity
+  for (const a of [...list].sort((x, y) => x.startedAt - y.startedAt)) {
+    if (a.startedAt > end) batch = []
+    batch.push(a)
+    end = Math.max(end, a.status === 'running' ? Infinity : (a.endedAt ?? a.startedAt))
+  }
+  return batch
+}
+
+// The band for a batch with no savvy flow (the `band: any` option): the batch as a flow
+// delegating its tasks, done out of total.
+const batchFlow = (batch: AgentRun[], title: string): Flow => ({
+  title,
+  total: batch.length,
+  done: batch.filter(a => a.status !== 'running').length,
+  running: batch.filter(a => a.status === 'running').length,
+  phase: 'delegate',
+  isFinished: false,
+  tasks: [],
+})
+
 // Deterministic noise so the dither does not shimmer between redraws.
 const noise = (x: number, y: number): number => {
   const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453
@@ -1613,7 +1639,12 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const f = await read($, flow)
+    const reported = await read($, flow)
+    const list = await read($, agents)
+    // With no savvy flow, `band: any` draws the running batch of agents instead.
+    const batch = reported === null && options.band === 'any' ? currentBatch(list) : []
+    const isBatch = batch.some(a => a.status === 'running')
+    const f = reported ?? (isBatch ? batchFlow(batch, tr().pane) : null)
     if (f === null || e.props.hasSurvey) return next(e)
     // Draw this row with the other mods' bands beneath it. Claude Code's own placeholder ({ type: 'engine' }) is
     // never nested: the desktop drops a band that nests it.
@@ -1622,8 +1653,7 @@ export const register: Register = (on, options) => {
 
     const ui = $.ui.resolve(e)
     const { Box, Text, Button } = ui
-    const list = await read($, agents)
-    const crew = list.length + plannedOf(f, list).length
+    const crew = isBatch ? batch.length : list.length + plannedOf(f, list).length
     const isWorking = list.some(a => a.status === 'running')
     const crewButton = (
       <Button key="savvy-agents" label={`×${crew}`} plain onPress={() => void togglePane($)} />
@@ -1650,7 +1680,7 @@ export const register: Register = (on, options) => {
           <Box flexDirection={isRtl() ? 'row-reverse' : 'row'} alignItems="center" gap={1}>
             <Svg source={rowSvg(f, width, isWorking)} alt={`${f.title}: ${label(f)}, ${percent}`} width={width} height={H} />
             {crewButton}
-            {dismiss}
+            {!isBatch && dismiss}
           </Box>
           {below}
         </Box>
@@ -1672,7 +1702,7 @@ export const register: Register = (on, options) => {
           <Text dimColor>{percent}</Text>
           <Text color={CLAY}>▣</Text>
           {crewButton}
-          {dismiss}
+          {!isBatch && dismiss}
         </Box>
         {below}
       </Box>
