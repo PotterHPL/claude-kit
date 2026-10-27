@@ -734,16 +734,19 @@ const ROW_GAP = 2
 // Columns a row needs beside its crab before the crab is worth drawing.
 const ROW_TEXT_MIN = 24
 
-// Two frames, a quarter second each, numbered off the clock so a redraw and a blit agree.
+// Frames a quarter second each, numbered off the clock so a redraw and a blit agree. The
+// count runs over 12 (3 seconds): legs step every frame, a work cycle takes 2 or 4, and
+// a crab that blinks does so on the last of the 12.
 const FRAME_MS = 250
-const frameAt = (ms: number): number => Math.floor(ms / FRAME_MS) % 2
+const FRAME_LOOP = 12
+const frameAt = (ms: number): number => Math.floor(ms / FRAME_MS) % FRAME_LOOP
 
 // The full crab's walk: the leg pairs lift in turn. No bob: one pixel of bob in
 // half-block cells reads as a jump.
 const walk =
   (k: number): Shift =>
   cls =>
-    cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
+    cls === 'la' ? -(k % 2) : cls === 'lb' ? (k % 2) - 1 : 0
 
 // The mini crabs, one per costume, each the full crab's costume redrawn at this size:
 // the hat in the two rows above the body, the prop beside it. `frames` are the pixels
@@ -751,7 +754,15 @@ const walk =
 // `walks` false keeps the legs still (the astronaut floats). Walking, the leg pairs
 // lift in turn, a pixel shorter rather than gone: a one-pixel leg lifted would vanish
 // and read as a flicker.
-type MiniCostume = { rows: string[]; frames?: [x: number, y: number, ch: string][][]; walks?: false }
+// A costume of 8 rows draws its own legs (a prop that stands on the floor); `palette`
+// replaces the shared one; `blinks` false keeps the eyes open (a visor, an eyepatch).
+type MiniCostume = {
+  rows: string[]
+  frames?: [x: number, y: number, ch: string][][]
+  walks?: false
+  blinks?: false
+  palette?: Record<string, string>
+}
 
 const MINI_PALETTE: Record<string, string> = {
   c: CLAY, k: INK, K: '#55514C', w: '#F8F6F1', G: '#E6E8EE', g: '#C9CCD2', y: '#F5C542', Y: '#C99A1E',
@@ -779,16 +790,116 @@ const MINI_COSTUMES: Record<string, MiniCostume> = {
   explore: { rows: ['.K.KKK.K.', '.KKKKKKK.', '.ZZZZZZZ.', '.ckcckkc.', 'ccccccccs', '.ccccccc.'], frames: [[], [[8, 4, 'c'], [8, 3, 's']]] },
 }
 
-const miniCrab = (f: Fill, costume: string, frame: number | null): void => {
+// Conaltura's crew (fork only): one costume per agent type of TI's method, each with a
+// four-frame work cycle. The `costumes` option maps the agent types to them.
+const OBRA_PALETTE: Record<string, string> = {
+  c: CLAY, k: INK, K: '#4A4A48', w: '#F8F6F1', W: '#CFD3D0', s: '#8E929A', d: '#7A4A26', D: '#5A3519',
+  o: '#F08A24', O: '#C46A12', l: '#A1D81A', L: '#DBFF69', t: '#1B7489', T: '#125160',
+  b: '#2F6FD0', B: '#9CC3F5', y: '#F5C542', Z: '#F5C542', r: '#E5483F', R: '#A6322C', m: '#FF795A', M: '#C9563C', p: '#B382FF',
+}
+const OBRA: Record<string, MiniCostume> = {
+  // Surveyor (explorador): white hard hat, theodolite on a tripod that stands on the floor;
+  // looks into it, the laser lights, looks back.
+  'obra-topografo': {
+    palette: OBRA_PALETTE,
+    rows: ['..wwwww..', '.WWWWWWWy', '.cccccccs', '.ckccckcs', 'ccccccccs', '.cccccccs', '.c.c.c.cs', '.c.c.c.cs'],
+    frames: [[], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k'], [8, 1, 'r'], [8, 0, 'r']], [[8, 1, 'r']]],
+  },
+  // Worker (ejecutor): orange hard hat, lime vest; raises the hammer and strikes a spark off the floor.
+  'obra-obrero': {
+    palette: OBRA_PALETTE,
+    rows: ['..ooooo..', '.OOOoOOO.', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.lllllll.'],
+    frames: [[[0, 3, 'd'], [0, 2, 's']], [[0, 3, 'd'], [0, 2, 'd'], [0, 1, 's']], [[0, 5, 'd'], [0, 6, 's'], [0, 7, 'Z']], [[0, 5, 'd'], [0, 6, 's']]],
+  },
+  // Inspector (revisor): white hard hat with a petrol band; reads the clipboard and ticks it twice.
+  'obra-interventor': {
+    palette: OBRA_PALETTE,
+    rows: ['..wwwww..', '.TTTTTTT.', '.ccccccc.', '.ckccckcs', 'cccccccWW', '.ccccccWW'],
+    frames: [[], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k'], [7, 4, 'l']], [[7, 4, 'l'], [8, 5, 'l']]],
+  },
+  // Architect (consejero): beret, round glasses, plans under the arm; takes them out, reads, tucks them back.
+  'obra-arquitecto': {
+    palette: OBRA_PALETTE,
+    rows: ['..kkkk...', '.kkkkkkk.', '.ccccccc.', '.WkWcWkW.', 'ccccccccb', '.cccccccB'],
+    frames: [[], [[8, 5, '.'], [8, 3, 'B']], [[8, 5, '.'], [8, 3, 'B'], [8, 2, 'b'], [2, 3, 'W'], [3, 3, 'k'], [6, 3, 'W'], [7, 3, 'k']], [[8, 5, '.'], [8, 3, 'B']]],
+  },
+  // Designer (Plan): petrol hard hat, pencil behind the ear, set square in hand; measures, takes the pencil, notes.
+  'obra-plan': {
+    palette: OBRA_PALETTE,
+    rows: ['..ttttt..', '.TTTTTTTy', 'pccccccck', 'pckccckc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[], [[0, 2, '.'], [0, 5, 'p']], [[0, 2, '.'], [0, 5, 'p'], [8, 1, '.'], [8, 2, '.'], [8, 3, 'y'], [8, 4, 'k']], [[8, 1, '.'], [8, 2, '.'], [8, 3, 'y'], [8, 4, 'k']]],
+  },
+  // Guide (claude-code-guide): coral cap, pennant on a pole it holds; waves it side to side.
+  'obra-guia': {
+    palette: OBRA_PALETTE,
+    rows: ['..mmmm.ls', '.mmmmmMMs', '.cccccccs', '.ckccckcs', 'ccccccccs', '.ccccccc.'],
+    frames: [[], [[7, 0, 'L'], [6, 0, 'l']], [[7, 0, '.'], [6, 0, '.'], [8, 0, 'l']], [[7, 0, 'L'], [6, 0, 'l']]],
+  },
+  // Foreman (general-purpose): red hard hat with a stripe, moustache, radio in hand; looks at it, switches it on.
+  'obra-maestro': {
+    palette: OBRA_PALETTE,
+    rows: ['..rrwrr..', '.RRRRRRR.', 'sccccccc.', 'kckccckc.', 'kccDDDccc', '.ccccccc.'],
+    frames: [[], [[2, 3, 'c'], [1, 3, 'k'], [6, 3, 'c'], [5, 3, 'k']], [[0, 3, 'l'], [2, 3, 'c'], [1, 3, 'k'], [6, 3, 'c'], [5, 3, 'k']], [[0, 3, 'l']]],
+  },
+}
+Object.assign(MINI_COSTUMES, OBRA)
+
+// On the desktop the crew is the mini costume at three times its size, its legs in the
+// walk's two groups (`la`, `lb`) so the desktop's CSS walks them as the other crabs.
+const OBRA_SCALE = 3
+for (const [id, c] of Object.entries(OBRA)) {
+  COSTUMES[id] = f => {
+    const rows = [...c.rows]
+    if (rows.length === MINI_BODY.length + 2) rows.push(MINI_LEGS, MINI_LEGS)
+    const palette = c.palette ?? MINI_PALETTE
+    rows.forEach((row, y) =>
+      [...row].forEach((ch, x) => {
+        const color = palette[ch]
+        if (!color) return
+        const isLeg = y >= rows.length - 2 && ch === 'c'
+        const cls = isLeg ? (x === 1 || x === 5 ? 'la' : 'lb') : 'bd'
+        f(1 + x * OBRA_SCALE, 4 + y * OBRA_SCALE, OBRA_SCALE, OBRA_SCALE, color, cls)
+      }),
+    )
+  }
+}
+
+// The eyes are the body's second row (row 3); a blink turns each lone eye pixel to body.
+// An eye with a dark neighbour is a visor or a patch, and stays.
+const EYE_ROW = 3
+const blink = (rows: string[][]): void => {
+  const row = rows[EYE_ROW]
+  if (!row) return
+  const eyes = row.map((ch, x) => ch === 'k' && row[x - 1] !== 'k' && row[x + 1] !== 'k')
+  eyes.forEach((isEye, x) => {
+    if (isEye) row[x] = 'c'
+  })
+}
+
+// A failed agent's crab crouches a pixel, eyes low, with a drop of sweat beside it.
+const SWEAT: [x: number, y: number, ch: string] = [8, 2, '~']
+
+const miniCrab = (f: Fill, costume: string, frame: number | null, isFailed = false): void => {
   const c = MINI_COSTUMES[costume] ?? MINI_COSTUMES.other ?? { rows: [] }
-  const rows = c.rows.map(r => [...r])
-  for (const [x, y, ch] of frame === null ? [] : (c.frames?.[frame % 2] ?? [])) {
+  const palette = { ...(c.palette ?? MINI_PALETTE), '~': '#9CC3F5' }
+  let rows = c.rows.map(r => [...r])
+  if (rows.length === MINI_BODY.length + 2) rows.push([...MINI_LEGS], [...MINI_LEGS])
+  const cycle = c.frames ?? []
+  for (const [x, y, ch] of frame === null || !cycle.length ? [] : (cycle[frame % cycle.length] ?? [])) {
     const row = rows[y]
     if (row && x < row.length) row[x] = ch
   }
-  stamp(f, 0, 0, rows.map(r => r.join('')), MINI_PALETTE)
-  const lifted = frame === null || c.walks === false ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)
-  stamp(f, 0, rows.length, [MINI_LEGS, lifted], MINI_PALETTE)
+  const feet = rows[rows.length - 1]
+  if (frame !== null && c.walks !== false && feet)
+    for (const x of frame % 2 ? [3, 7] : [1, 5]) if (feet[x] === 'c') feet[x] = '.'
+  if (frame === FRAME_LOOP - 1 && c.blinks !== false) blink(rows)
+  if (isFailed) {
+    rows = [[...'.'.repeat(MINI_W)], ...rows.slice(0, -1)]
+    const [x, y, ch] = SWEAT
+    const row = rows[y]
+    if (row && row[x] === '.') row[x] = ch
+  }
+  stamp(f, 0, 0, rows.map(r => r.join('')), palette)
 }
 
 // Planned tasks' crabs are drawn faded, as the desktop draws them at 45% opacity: mixed
@@ -799,13 +910,13 @@ const FADE_GROUND = 0x1e1e1e
 const cellCache = new Map<string, Cells>()
 
 // `frame` null: standing still.
-const crabCells = (costume: string, frame: number | null, isMini: boolean, isFaded = false): Cells => {
-  const id = `${costume}|${frame}|${isMini}|${isFaded}|${isRtl()}`
+const crabCells = (costume: string, frame: number | null, isMini: boolean, isFaded = false, isFailed = false): Cells => {
+  const id = `${costume}|${frame}|${isMini}|${isFaded}|${isFailed}|${isRtl()}`
   const hit = cellCache.get(id)
   if (hit) return hit
   const draw = COSTUMES[costume] ?? ((g: Fill) => crabBody(g))
   let p = isMini
-    ? paint(f => miniCrab(f, costume, frame), MINI_W, MINI_H)
+    ? paint(f => miniCrab(f, costume, frame, isFailed), MINI_W, MINI_H)
     : paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
   if (isFaded) p = fade(p, FADE, FADE_GROUND)
   if (isRtl()) p = mirror(p)
@@ -1337,7 +1448,7 @@ export const register: Register = (on, options) => {
           key={crabKey(a)}
           columns={size.columns}
           rows={size.rows}
-          cells={crabCells(runCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
+          cells={crabCells(runCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB, false, a.status === 'failed').cells}
         />
       )
     const row = (a: AgentRun) => {

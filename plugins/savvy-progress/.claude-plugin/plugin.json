@@ -1,6 +1,6 @@
 {
   "name": "savvy-progress",
-  "version": "1.2.1",
+  "version": "1.2.1-conaltura.1",
   "description": "Progress bar above the prompt for /savvy-flow, plus an agents panel (/agents-info): running, finished and planned subagents with model, task progress, context, cost and time.",
   "author": {
     "name": "johnnyvizz",
@@ -55,8 +55,8 @@
     "costumes": {
       "type": "string",
       "title": "Costume per agent type",
-      "description": "type=costume pairs, comma-separated (for example explorador=explore,revisor=heavy): the costume (fable, heavy, careful, medium, light, explore or other) an agent type wears; any other agent dresses for its savvy tier, or its model and effort",
-      "default": ""
+      "description": "type=costume pairs, comma-separated (for example explorador=explore,revisor=heavy): the costume (fable, heavy, careful, medium, light, explore or other) an agent type wears; any other agent dresses for its savvy tier, or its model and effort; this fork maps TI's agents to its crew (obra-*) by default",
+      "default": "explorador=obra-topografo,ejecutor=obra-obrero,revisor=obra-interventor,consejero=obra-arquitecto,Plan=obra-plan,claude-code-guide=obra-guia,general-purpose=obra-maestro"
     }
   },
   "homepage": "https://github.com/johnnyvizz/claude-kit/tree/main/plugins/savvy-progress",
