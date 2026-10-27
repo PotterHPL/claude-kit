@@ -29,3 +29,20 @@ Cost is a rough estimate from token counts and a built-in per-model price table 
 `costumes`: `type=costume` pairs, comma-separated, for example `explorador=explore,revisor=heavy`. An agent of a listed type wears that costume (`fable`, `heavy`, `careful`, `medium`, `light`, `explore` or `other`) and, for a tier, its color. Any other agent dresses for its savvy tier; `Explore` is the pirate; the rest dress for their model and effort: Fable is the astronaut, and on another model `xhigh` or `max` is the detective, `high` the engineer, `medium` the chef and `low` the racer. Before an agent's first model request its effort is unknown, and it is the plain crab.
 
 Install instructions are in the [repository README](../../README.md).
+
+## Conaltura fork
+
+This fork (`PotterHPL/claude-kit`, branch `conaltura`) adds a crew for the agent types of TI's method and maps them by default through `costumes`:
+
+| Agent type | Costume | Work cycle (4 frames) |
+|---|---|---|
+| `explorador` | `obra-topografo`: surveyor, theodolite on a tripod | looks into it, the laser lights |
+| `ejecutor` | `obra-obrero`: worker, orange hard hat, lime vest | raises the hammer, strikes a spark |
+| `revisor` | `obra-interventor`: inspector with a clipboard | reads it, ticks it twice |
+| `consejero` | `obra-arquitecto`: architect, beret, round glasses | takes out the plans, reads, tucks them back |
+| `Plan` | `obra-plan`: designer, set square, pencil behind the ear | measures, takes the pencil, notes |
+| `claude-code-guide` | `obra-guia`: guide with a pennant | waves it side to side |
+| `general-purpose` | `obra-maestro`: foreman, moustache, radio | looks at it, switches it on |
+
+Every terminal crab blinks once every three seconds (a visor or an eyepatch stays open), and a failed agent's crab crouches with a drop of sweat. A finished one stands still. On the desktop the crew is the terminal costume at three times its size.
+
