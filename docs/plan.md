@@ -150,4 +150,11 @@ salen de su `main` y no lo llevan.
 - **PR al autor abiertos:** johnnyvizz/claude-kit#47 (cangrejos y filas en la terminal) y #48 (disfraz para todo
   agente y español; depende del #47). Ramas `upstream/terminal-crabs` y `upstream/costume-map`, un commit cada una.
   Si el autor pide cambios, se atienden en esas ramas y se traen a `conaltura`.
-- Siguiente: **F4**, maqueta del equipo de obra (7 trajes) en un Artifact.
+- **2026-10-27 · F4 cerrada:** maqueta «Cuadrilla de obra» (Artifact, 5 versiones). JD exploró un camino B (línea
+  Savvy), rediseños y personajes desde cero, y se quedó con el camino A original: topógrafo, obrero, interventor,
+  arquitecto, proyectista, guía y maestro de obra (con bigote). Animaciones aprobadas: ciclo de trabajo de 4 cuadros,
+  parpadeo cada 3 s, cangrejo encogido con gota de sudor si falla; sin festejo al terminar (queda quieto).
+- **2026-10-27 · F5 cerrada** (PR #4): la cuadrilla en el fork (`obra-*`), mapeada por defecto con `costumes`;
+  escritorio = el traje de terminal a 3×. Versión `1.2.1-conaltura.1`. JD la vio trabajando con los 7 tipos de agente.
+- **Proyecto cerrado.** Pendiente fuera de fase: atender los comentarios del autor en johnnyvizz/claude-kit#47 y #48 si
+  llegan; un dibujo propio a 30 × 28 para el escritorio, si algún día se usa más que la terminal.
