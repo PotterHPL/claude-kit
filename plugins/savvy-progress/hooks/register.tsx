@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRun, Flow, Panel, Phase, PlannedTask } from '../types'
-import { fade, mirror, paint, toCells } from './raster'
+import { DEFAULT_COLOR, fade, mirror, paint, textCells, toCells } from './raster'
 import type { Cells, Shift } from './raster'
 
 const flow = atom({ plugin: 'savvy-progress', key: 'flow' } as const, null)
@@ -413,6 +413,50 @@ const rowSvg = (f: Flow, W: number, isWorking: boolean): string => {
 <text class="m" ${percentAt} font-family="${FONT}" font-size="12.5" font-variant-numeric="tabular-nums">${percent}</text>
 ${CRAB_CSS}${crab(rx(W - CRAB_W + 1, crabW), 0, 'other', false, isWorking, 0.8, rtl)}
 </svg>`
+}
+
+// The terminal band as the desktop's, in one Raster row: a sparkle, then a dark track
+// with a tick at each task boundary, the filled part a pill with the label on it, its
+// ends rounded by half blocks. Colors as 0xRRGGBB.
+const hex = (c: string): number => parseInt(c.replace('#', ''), 16)
+const BAND_TRACK = 0x2c2c34
+const BAND_TICK = 0x5a5a68
+const BAND_TEXT = 0xffffff
+const SPARKLES = ['⠁⡀⠄⠂', '⠂⠁⡀⠄']
+
+const bandTrackCells = (f: Flow, width: number, frame: number): Cells => {
+  const accent = hex(f.isFinished ? DONE : ACCENT)
+  const cells: [number, number, number][] = []
+  const put = (s: string, fg: number, bg = DEFAULT_COLOR) => {
+    for (const ch of s) cells.push([ch.codePointAt(0) ?? 0x20, fg, bg])
+  }
+  put(SPARKLES[frame % 2] ?? '', accent)
+  put(' ', accent)
+  const w = Math.max(4, width - cells.length)
+  const text = ` ${label(f)} `
+  const filled = Math.min(w, Math.max(text.length + 2, Math.round(w * ratio(f))))
+  const ticks = new Set(Array.from({ length: Math.max(0, f.total - 1) }, (_, i) => Math.round((w * (i + 1)) / f.total)))
+  for (let x = 0; x < w; x++) {
+    if (x === 0) put('▐', accent)
+    else if (x < filled - 1) put(text[x - 1] ?? ' ', BAND_TEXT, accent)
+    else if (x === filled - 1) put('▌', accent, BAND_TRACK)
+    else put(ticks.has(x) ? '│' : ' ', BAND_TICK, BAND_TRACK)
+  }
+  return textCells(cells, cells.length)
+}
+
+// The band's crab: one row, two pixels tall; its legs step while agents work.
+const BAND_CRAB = { top: '.cccc.', legs: ['c.cc.c', '.c..c.'] }
+const bandCrabCells = (isWorking: boolean, frame: number): Cells => {
+  const legs = BAND_CRAB.legs[isWorking ? frame % 2 : 0] ?? ''
+  const clay = hex(CLAY)
+  const cells = [...BAND_CRAB.top].map((top, x): [number, number, number] => {
+    const isTop = top === 'c'
+    const isBottom = legs[x] === 'c'
+    const ch = isTop && isBottom ? '█' : isTop ? '▀' : isBottom ? '▄' : ' '
+    return [ch.codePointAt(0) ?? 0x20, clay, DEFAULT_COLOR]
+  })
+  return textCells(cells, cells.length)
 }
 
 const barText = (f: Flow, width: number): string => {
@@ -1690,6 +1734,32 @@ export const register: Register = (on, options) => {
     const cols = e.props.bodyColumns
     const titleW = Math.max(8, Math.min(30, f.title.length + 2, Math.floor(cols / 3)))
     const width = Math.max(6, Math.min(40, cols - titleW - 32))
+    // Where the terminal has a Raster: the desktop's band, cell by cell.
+    if (e.surface === 'terminal' && 'Raster' in ui) {
+      const { Raster } = ui
+      const frame = Math.floor((await read($, now)) / 1000) % 2
+      const trackW = Math.max(12, cols - titleW - 24)
+      const track = bandTrackCells(f, trackW, frame)
+      const crab = bandCrabCells(isWorking, frame)
+      return (
+        <Box flexDirection="column">
+          <Box flexDirection="row" gap={1}>
+            <Box width={titleW} flexShrink={0}>
+              <Text color={f.isFinished ? DONE : ACCENT}>● </Text>
+              <Text bold wrap="truncate-end">
+                {f.title}
+              </Text>
+            </Box>
+            <Raster key="band-track" columns={track.columns} rows={1} cells={track.cells} />
+            <Text dimColor>{percent}</Text>
+            <Raster key="band-crab" columns={crab.columns} rows={1} cells={crab.cells} />
+            {crewButton}
+            {!isBatch && dismiss}
+          </Box>
+          {below}
+        </Box>
+      )
+    }
     return (
       <Box flexDirection="column">
         <Box flexDirection="row" gap={2}>
