@@ -656,11 +656,11 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is a small crab drawn for the terminal, 10 × 5 pixels in 3 rows: body
-// 8 wide with one-pixel eyes (an eighth of it, as the full crab's), arms and legs one
-// pixel. It sits beside an agent's title and model, a small mark rather than a block.
+// A row crab is a small crab drawn for the terminal, 10 × 6 pixels in 3 rows: body
+// 8 wide with one-pixel eyes (an eighth of it, as the full crab's), arms one pixel,
+// legs two. It sits beside an agent's title and model, a small mark rather than a block.
 const MINI_W = 10
-const MINI_H = 5
+const MINI_H = 6
 const ROW_CRAB = { columns: MINI_W, rows: Math.ceil(MINI_H / 2) }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
 // Columns a row needs beside its crab before the crab is worth drawing.
@@ -677,14 +677,15 @@ const walk =
   cls =>
     cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
 
-// The mini crab. Walking, the leg pairs lift in turn as the full crab's do: the
-// first and third legs (`la`) one frame, the second and fourth (`lb`) the next.
+// The mini crab. Walking, the leg pairs lift in turn as the full crab's do, a pixel
+// shorter rather than gone: the first and third legs (`la`) one frame, the second
+// and fourth (`lb`) the next. A one-pixel leg lifted would vanish and read as a flicker.
 const MINI_BODY = ['.cccccccc.', '.ckcccckc.', 'cccccccccc', '.cccccccc.']
 const MINI_LEGS = '.c.c..c.c.'
 const MINI_LIFTED = ['...c....c.', '.c....c...']
 const miniCrab = (f: Fill, frame: number | null): void => {
   stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
-  stamp(f, 0, MINI_BODY.length, [frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
+  stamp(f, 0, MINI_BODY.length, [MINI_LEGS, frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
 }
 
 const cellCache = new Map<string, Cells>()
@@ -1328,11 +1329,23 @@ export const register: Register = (on, options) => {
         ) : (
           <Box flexDirection="column" marginTop={1}>
             {isEmpty && <Text dimColor>{s.empty}</Text>}
-            {running.length > 0 && <Text dimColor>{s.running} · {running.length}</Text>}
+            {running.length > 0 && (
+              <Box marginBottom={1}>
+                <Text dimColor>
+                  {s.running} · {running.length}
+                </Text>
+              </Box>
+            )}
             {running.map(row)}
-            {finished.length > 0 && toggleDone}
+            {finished.length > 0 && <Box marginBottom={p.isDoneCollapsed ? 0 : 1}>{toggleDone}</Box>}
             {!p.isDoneCollapsed && finished.map(row)}
-            {planned.length > 0 && <Text dimColor>{s.planned} · {planned.length}</Text>}
+            {planned.length > 0 && (
+              <Box marginBottom={1}>
+                <Text dimColor>
+                  {s.planned} · {planned.length}
+                </Text>
+              </Box>
+            )}
             {planned.map(pl => {
               const tier = pl.tier in TIER_COLOR ? pl.tier : 'other'
               return (
