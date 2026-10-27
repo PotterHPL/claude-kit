@@ -32,8 +32,8 @@
     {
       "name": "next-steps",
       "source": "./plugins/next-steps",
-      "description": "Mod: after each turn, suggests up to three next prompts above the input (from anthropics/claude-plugins-community, commit 06ec7b6, MIT).",
-      "version": "1.0.0",
+      "description": "Mod: after each turn of the main thread, suggests up to three next prompts above the input (from anthropics/claude-plugins-community, commit 06ec7b6, MIT; skips subagents' turns).",
+      "version": "1.0.0-conaltura.1",
       "category": "mod"
     }
   ]
