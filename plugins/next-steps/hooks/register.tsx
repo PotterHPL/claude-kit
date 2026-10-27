@@ -147,7 +147,35 @@ function show($: EngineInterface, nextView: View): void {
   $.ui.invalidate('ui.render')
 }
 
+// What the forks have cost, as the API reports each one: summed in the store across
+// sessions, read with /consumo-sugerencias (reiniciar starts over). Prices of Opus 5.5
+// per million tokens; on a subscription it is usage, not a charge.
+const USAGE_KEY = 'usage'
+type Tally = { forks: number; input: number; cacheRead: number; cacheWrite: number; output: number; skipped: number }
+const EMPTY: Tally = { forks: 0, input: 0, cacheRead: 0, cacheWrite: 0, output: 0, skipped: 0 }
+const usd = (u: Tally) => (u.input * 4 + u.cacheRead * 0.2 + u.cacheWrite * 8 + u.output * 20) / 1e6
+const tallyOf = (v: unknown): Tally => ({ ...EMPTY, ...(v && typeof v === 'object' ? (v as Partial<Tally>) : {}) })
+
 export const register: Register = (on, options) => {
+  on('session.start', async ($, e, next) => {
+    const started = await next(e)
+    await $.command.register({ name: 'consumo-sugerencias', description: 'Next Steps: what its forks have cost (reiniciar to start over)' })
+    return started
+  })
+  on('command.run', { command: 'consumo-sugerencias' }, async ($, e) => {
+    if ((e.args ?? '').trim() === 'reiniciar') {
+      await $.store.set(USAGE_KEY, EMPTY)
+      return { text: 'Consumo de Next Steps reiniciado.' }
+    }
+    const u = tallyOf(await $.store.get(USAGE_KEY))
+    const per = u.forks ? usd(u) / u.forks : 0
+    return {
+      text:
+        `Next Steps · ${u.forks} consultas · entrada ${u.input} · caché leída ${u.cacheRead} · caché escrita ${u.cacheWrite} · ` +
+        `salida ${u.output} · ≈$${usd(u).toFixed(3)} (≈$${per.toFixed(3)} por consulta) · turnos de subagente descartados ${u.skipped}`,
+    }
+  })
+
   const minTurnChars = typeof options?.minAnswerChars === 'number' ? options.minAnswerChars : 80
   const suggestsSkills = options?.suggestSkills !== false
 
@@ -162,7 +190,13 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     // Only the main thread's turns: a subagent's turn also completes here (with its
     // agentId), and forking then would re-read the whole main context for nothing.
-    if (e.agentId) return result
+    if (e.agentId) {
+      if (e.reason === 'answer' && e.answer.trim().length >= minTurnChars) {
+        const u = tallyOf(await $.store.get(USAGE_KEY))
+        await $.store.set(USAGE_KEY, { ...u, skipped: u.skipped + 1 })
+      }
+      return result
+    }
     if (e.reason !== 'answer' || e.answer.trim().length < minTurnChars) return result
     const turnId = e.turnId
     show($, { kind: 'loading', turnId })
@@ -174,6 +208,17 @@ export const register: Register = (on, options) => {
         const known = commands === null ? null : new Set(commands.map(command => command.name))
         const skills = suggestsSkills && commands !== null ? skillList(commands) : ''
         const reply = await $.model.fork({ prompt: forkPrompt(skills) })
+        if (reply.isAnswered) {
+          const u = tallyOf(await $.store.get(USAGE_KEY))
+          await $.store.set(USAGE_KEY, {
+            ...u,
+            forks: u.forks + 1,
+            input: u.input + reply.usage.input_tokens,
+            cacheRead: u.cacheRead + reply.usage.cache_read_input_tokens,
+            cacheWrite: u.cacheWrite + reply.usage.cache_creation_input_tokens,
+            output: u.output + reply.usage.output_tokens,
+          })
+        }
         items = reply.isAnswered ? parseSuggestions(reply.text, known) : []
       } catch (error) {
         $.ui.log(`fork failed: ${String(error)}`)

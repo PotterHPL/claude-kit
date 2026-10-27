@@ -13,4 +13,7 @@ Para actualizarlo: revisar el commit nuevo con la misma regla y copiar la carpet
   subagente (con su `agentId`), y el original no lo filtraba: cada subagente con una respuesta de 80 caracteres o más
   disparaba un `$.model.fork` que relee todo el contexto de la sesión principal. Ahora `if (e.agentId) return result`
   lo descarta. Prueba: `hooks/subagents.test.ts` (falla sin el filtro). Vale la pena proponerlo al original.
+- **2026-10-27 · `/consumo-sugerencias`.** Suma el uso que la API reporta de cada consulta (entrada, caché leída y
+  escrita, salida) y los turnos de subagente descartados, con su costo a precio de Opus 5.5. `reiniciar` lo pone en
+  cero. Medido ese día en una sesión de ~800k de contexto: ≈$0,18 por consulta, 90 % de lectura de caché.
 
