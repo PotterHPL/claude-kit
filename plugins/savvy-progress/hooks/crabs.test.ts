@@ -52,9 +52,44 @@ test('desktop: no Raster, the SVG rows as before', async ($, on) => {
   expect(await ui.find({ type: 'Svg' })).toBeDefined()
 })
 
-test('terminal: agents are numbered and the model is painted in its family color', async ($, on) => {
+// One model request of the worker at `effort`, as `turn.step` reports it.
+// The engine's answer to a model request: registered before the test first calls $.
+const answersSteps = (on: On) =>
+  on('turn.step', async function* () {
+    return { turnId: 'turn', index: 0, answer: '', toolUses: [], stopReason: 'end_turn', usage: { model: 'claude-haiku-5-5', input_tokens: 1000, output_tokens: 10, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } as never
+  })
+
+const step = async ($: Engine, effort: string) => {
+  const stream = ($.turn.step as (e: unknown) => AsyncIterable<unknown>)({ turnId: 'turn', index: 0, model: 'claude-haiku-5-5', effort, messageCount: 1, agentId: 'a1' })
+  for await (const _ of stream) void _
+}
+
+test('terminal: agents are numbered and the type is painted in the color of its effort', async ($, on) => {
+  answersSteps(on)
   await worker($, on)
+  await step($, 'low')
   const ui = await mount($, 'terminal', 60)
   expect(await ui.find({ type: 'Text', text: /^1\. Walking work$/ })).toBeDefined()
-  expect((await ui.find({ type: 'Text', text: /^Haiku 5\.5$/ }))?.props).toMatchObject({ color: '#1D9E75', bold: true })
+  // low reads as the light tier, as savvy's light worker runs at low effort.
+  expect((await ui.find({ type: 'Text', text: /^general-purpose$/ }))?.props).toMatchObject({ color: '#1D9E75' })
+  expect(await ui.find({ type: 'Text', text: /Haiku 5\.5 · low/ })).toBeDefined()
 })
+
+test('terminal: the steps an agent reports show as done/total and its note', async ($, on) => {
+  await worker($, on)
+  await $.tool.call({ tool: 'mcp__savvy-progress__step', done: 1, total: 4, note: 'Paleta validada', agentId: 'a1' } as never)
+  const ui = await mount($, 'terminal', 60)
+  expect(await ui.find({ type: 'Text', text: /^1\/4 · Paleta validada$/ })).toBeDefined()
+})
+
+for (const [reportSteps, isAsked] of [['savvy', false], ['any', true]] as const) {
+  test(`reportSteps ${reportSteps}: a general-purpose agent is ${isAsked ? '' : 'not '}asked for its steps`, { options: { reportSteps } }, async ($, on) => {
+    let prompt = ''
+    on('agent.spawn', (_$, e) => {
+      prompt = (e as { prompt: string }).prompt
+      return { model: 'claude-haiku-5-5', agentId: 'a1' } as never
+    })
+    await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'Any work', subagentType: 'general-purpose', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
+    expect(prompt.includes('mcp__savvy-progress__step')).toBe(isAsked)
+  })
+}

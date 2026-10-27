@@ -22,6 +22,11 @@ const STEP_TOOL = 'mcp__savvy-progress__step'
 const STEP_BRIEF = `
 
 Progress reporting: before any other work, call \`${STEP_TOOL}\` with \`total\` (your plan in 3-8 steps) and \`done: 0\`; call it again with \`done\` and a few-word \`note\` as each step finishes. It only draws a progress bar.`
+// The same request for an agent that is not a savvy worker, under `reportSteps: any`:
+// its tools may be a list that leaves the step tool out, so it is asked conditionally.
+const STEP_BRIEF_ANY = `
+
+Progress reporting: if \`${STEP_TOOL}\` is among your tools, call it before other work with \`total\` (your plan in 3-8 steps) and \`done: 0\`, then again with \`done\` and a few-word \`note\` as each step finishes. It only draws a progress bar.`
 const PANE = 'savvy-agents'
 // The width the panel asks for when docked beside a fullscreen transcript: a row
 // crab, its lines and the stats beside the bar. A request; a width the person set wins.
@@ -369,15 +374,6 @@ const TIER_COLOR: Record<string, string> = {
   other: '#888780',
 }
 
-// Each model family's color, as the tier that runs on it: the panel paints the model's name with it.
-const MODEL_COLORS: [RegExp, string][] = [
-  [/fable|mythos/i, TIER_COLOR.fable ?? '#7F77DD'],
-  [/opus/i, TIER_COLOR.heavy ?? '#D85A30'],
-  [/sonnet/i, TIER_COLOR.medium ?? '#378ADD'],
-  [/haiku/i, TIER_COLOR.light ?? '#1D9E75'],
-]
-const modelColor = (model: string): string => MODEL_COLORS.find(([re]) => re.test(model))?.[1] ?? TIER_COLOR.other ?? '#888780'
-
 // What each savvy tier runs on, for planned tasks that have no run yet.
 const colorOf = (tier: string): string => TIER_COLOR[tier] ?? '#888780'
 
@@ -457,6 +453,21 @@ const tierOf = (type: string): string => {
   const bare = type.replace(/^[^:]*:/, '')
   const t = bare.replace(/^savvy-/, '').toLowerCase()
   return Object.hasOwn(TIER_COLOR, t) && bare.startsWith('savvy-') ? t : 'other'
+}
+
+// The tier a run reads as: its savvy tier, else the one its model and effort match
+// (TIER_MODEL): Fable is fable; on another model xhigh or max is heavy, high careful,
+// medium medium, low light. With no effort seen, other.
+const runTier = (a: AgentRun): string => {
+  const savvy = tierOf(a.type)
+  if (savvy !== 'other') return savvy
+  if (/fable|mythos/i.test(a.model)) return 'fable'
+  const effort = (a.effort ?? '').toLowerCase()
+  if (effort === 'xhigh' || effort === 'max') return 'heavy'
+  if (effort === 'high') return 'careful'
+  if (effort === 'medium') return 'medium'
+  if (effort === 'low') return 'light'
+  return 'other'
 }
 
 const modelName = (id: string): string => {
@@ -840,10 +851,11 @@ const compactSvg = (W: number, list: AgentRun[], planned: Planned[], t: ReturnTy
 
 // --- terminal drawing: the same rows in text.
 
-// A thin bar, light enough to sit under a line of text: the filled part and the rest.
+// The terminal's progress bar, three eighths of a cell tall as the desktop's is a thin
+// strip under the text: the filled part and the rest.
 const thinBar = (pct: number, width: number): [string, string] => {
   const filled = Math.max(0, Math.min(width, Math.round((width * pct) / 100)))
-  return ['━'.repeat(filled), '━'.repeat(width - filled)]
+  return ['▃'.repeat(filled), '▃'.repeat(width - filled)]
 }
 const BAR_REST = '#3c3c3a'
 
@@ -1018,8 +1030,10 @@ export const register: Register = (on, options) => {
   })
 
   on('agent.spawn', async ($, e, next) => {
-    const isUnbriefed = e.subagentType.startsWith('savvy-') && !e.prompt.includes(STEP_TOOL)
-    const started = await next(isUnbriefed ? { ...e, prompt: e.prompt + STEP_BRIEF } : e)
+    const isSavvy = e.subagentType.startsWith('savvy-')
+    const brief = isSavvy ? STEP_BRIEF : options.reportSteps === 'any' ? STEP_BRIEF_ANY : ''
+    const isUnbriefed = brief !== '' && !e.prompt.includes(STEP_TOOL)
+    const started = await next(isUnbriefed ? { ...e, prompt: e.prompt + brief } : e)
     if (started.deny !== undefined) return started
 
     const at = await $.clock.now()
@@ -1216,7 +1230,8 @@ export const register: Register = (on, options) => {
     const stageFits = Math.floor((cols + 1) / (STAGE_CRAB.columns + 1))
     const hasStage = Raster !== null && crabMode === 'stage' && stageFits > 0 && running.length > 0
     const textCols = hasRowCrabs ? cols - ROW_CRAB.columns - 1 : cols
-    const barW = Math.max(6, Math.min(20, textCols - 18))
+    // The bar spans the text column, as the desktop's spans the row.
+    const barW = Math.max(6, textCols - (hasRowCrabs ? 0 : 2))
     const frame = frameAt(at)
     const crabOf = (a: AgentRun, size: typeof ROW_CRAB) =>
       Raster && (
@@ -1228,16 +1243,20 @@ export const register: Register = (on, options) => {
         />
       )
     const row = (a: AgentRun) => {
-      const tier = tierOf(a.type)
+      // As the desktop draws a row: the tier word in its color (for an agent that is
+      // not a savvy worker, its type, in the color of its model and effort), the model
+      // muted, the task's steps, and a bar in the tier's color.
+      const savvy = tierOf(a.type)
+      const tier = runTier(a)
       const color = colorOf(tier)
       const ctx = ctxOf(a)
       const progress = progressOf(a)
       const n = list.indexOf(a) + 1
       const isRunning = a.status === 'running'
       const [filled, rest] = thinBar(progress === null ? ctx : progress * 100, barW)
-      const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''}  ` : ''
-      // The task and its time; who runs it and what it cost; while it runs, a thin bar.
-      // Beside a crab the colored mark goes: the crab is the row's mark.
+      const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
+      const stats = `${s.ctx} ${ctx}% · ${fmtTokens(a.contextTokens)}  ≈${fmtCost(a.costUsd)}`
+      const indent = hasRowCrabs ? '' : '  '
       const lines = (
         <Box flexDirection="column" flexGrow={1}>
           <Box flexDirection="row" justifyContent="space-between" gap={1}>
@@ -1246,34 +1265,31 @@ export const register: Register = (on, options) => {
               <Text bold>
                 {n}. {a.description || a.type}
               </Text>
-              <Text color={a.status === 'failed' ? 'red' : a.status === 'done' ? 'green' : modelColor(a.model)}> {STATUS_GLYPH[a.status]}</Text>
+              <Text color={a.status === 'failed' ? 'red' : a.status === 'done' ? 'green' : color}> {STATUS_GLYPH[a.status]}</Text>
             </Text>
             <Text dimColor>{fmtTime(elapsed(a, at))}</Text>
           </Box>
           <Text wrap="truncate-end">
-            {!hasRowCrabs && '  '}
-            <Text color={tier === 'other' ? undefined : color} dimColor={tier === 'other'}>
-              {tier === 'other' ? a.type : tierWord(tier)}
-            </Text>
-            <Text dimColor> · </Text>
-            <Text color={modelColor(a.model)} bold>
-              {modelName(a.model)}
-            </Text>
+            {indent}
+            <Text color={color}>{savvy === 'other' ? a.type : tierWord(savvy)}</Text>
             <Text dimColor>
-              {a.effort ? ` · ${effortWord(a.effort)}` : ''} · ≈{fmtCost(a.costUsd)}
+              {'  '}
+              {runModel(a)}
               {a.round > 1 ? ` · ${s.round} ${a.round}` : ''}
             </Text>
           </Text>
+          <Box flexDirection="row" justifyContent="space-between" gap={2}>
+            <Text wrap="truncate-end">
+              {indent}
+              {steps}
+            </Text>
+            <Text dimColor>{stats}</Text>
+          </Box>
           {isRunning && (
             <Text wrap="truncate-end">
-              {!hasRowCrabs && '  '}
-              <Text color={progress === null ? '#888780' : modelColor(a.model)}>{filled}</Text>
+              {indent}
+              <Text color={progress === null ? TIER_COLOR.other : color}>{filled}</Text>
               <Text color={BAR_REST}>{rest}</Text>
-              <Text dimColor>
-                {'  '}
-                {steps}
-                {s.ctx} {ctx}% · {fmtTokens(a.contextTokens)}
-              </Text>
             </Text>
           )}
         </Box>
