@@ -130,4 +130,17 @@ salen de su `main` y no lo llevan.
 - El repo vive en `40-ia/mods/claude-kit`, excluido del repo TI como `mcps-personales`.
 
 ## Relevo
-- **2026-10-26:** plan aprobado (5 fases); fork creado y clonado. Siguiente: **F1**, cuando JD diga «adelante».
+- **2026-10-27 · F1 cerrada** (PR #1 fusionado). Decisiones de JD en las iteraciones visuales:
+  - `row` (cangrejo por fila) en vez de `stage`; cangrejo pequeño de 9 × 6 pixeles (3 filas), dibujado a mano para la
+    terminal (la media resolución del sprite quedaba grande y pesada). Patas de 2 pixeles que se acortan por turnos.
+  - Fila calcada del escritorio: título numerado y tiempo; nivel en su color (para agentes que no son de Savvy, su
+    tipo en el color del nivel que corresponde a su modelo y esfuerzo) y modelo atenuado; pasos `n/total · nota` y
+    cifras; barra `▃` de lado a lado en el color del nivel. Dos líneas entre agentes y una bajo cada encabezado.
+  - `reportSteps: any`: todo subagente reporta sus pasos (instalación de JD). Panel acoplado a 56 columnas.
+  - Validación visual con un simulador de la cuadrícula de la terminal (scratchpad) antes de cada iteración.
+- **Para F2:** barra también en los terminados (llena, en su color), como el escritorio; cangrejo atenuado con disfraz
+  en «Planned»; disfraces a la escala del cangrejo pequeño (los sombreros necesitan filas encima: decidir con JD si
+  la fila crece a 4).
+- **Idea anotada (sin fase):** que la sesión principal reporte su plan con `progress` al delegar varias tareas, para ver
+  «Planned» sin Savvy Flow.
+- Siguiente: **F2**.
