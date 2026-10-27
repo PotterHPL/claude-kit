@@ -764,7 +764,8 @@ const costumeOf = (type: string): string => (type === 'Explore' ? 'explore' : ti
 // A run's costume: Explore is the pirate; otherwise the tier it reads as (runTier),
 // so an agent that is not a savvy worker dresses for its model and effort.
 const runCostume = (a: AgentRun): string => {
-  const mapped = agentTiers.get(a.type.replace(/^[^:]*:/, ''))
+  const type = a.type.replace(/^[^:]*:/, '')
+  const mapped = agentTiers.get(type) ?? CREWS[crew][type]
   if (mapped && Object.hasOwn(MINI_COSTUMES, mapped)) return mapped
   return a.type === 'Explore' ? 'explore' : runTier(a)
 }
@@ -921,10 +922,79 @@ const OBRA: Record<string, MiniCostume> = {
 }
 Object.assign(MINI_COSTUMES, OBRA)
 
+// The savvy crew (fork only): the same agent types dressed in the line of the author's
+// costumes, each with its own four-frame work cycle.
+const SAVVY_PALETTE: Record<string, string> = { ...OBRA_PALETTE, e: '#D9C08C', E: '#B89B62', Y: '#C99A1E' }
+const SAVVY_CREW: Record<string, MiniCostume> = {
+  // Safari explorer (explorador): pith helmet, binoculars; looks out, they glint, looks back.
+  'savvy-safari': {
+    palette: SAVVY_PALETTE,
+    rows: ['...eee...', '.EEEEEEE.', '.ccccccc.', '.ckccckcK', 'ccccccccc', '.ccccccc.'],
+    frames: [[], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k'], [8, 3, 'B']], [[8, 3, 'B']]],
+  },
+  // Robot (ejecutor): tin helmet, lime visor; a light scans the visor, the antenna blinks.
+  'savvy-robot': {
+    palette: SAVVY_PALETTE,
+    rows: ['....r....', '..sssss..', '.sssssss.', '.cLLLLLc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[[2, 3, 'w']], [[4, 3, 'w'], [4, 0, 'K']], [[6, 3, 'w']], [[4, 3, 'w'], [4, 0, 'K']]],
+    blinks: false,
+  },
+  // Judge (revisor): white wig, gavel; raises it and brings it down.
+  'savvy-juez': {
+    palette: SAVVY_PALETTE,
+    rows: ['.wwwwwww.', 'wwwwwwwww', 'wcccccccw', '.ckccckc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[[8, 3, 'Y'], [8, 2, 'd']], [[8, 3, 'Y'], [8, 2, 'd']], [[8, 5, 'Y'], [7, 5, 'd']], [[8, 5, 'Y'], [7, 5, 'd'], [8, 6, 'Z']]],
+  },
+  // Wizard (consejero): starred hat, staff in hand; the orb glows and the star twinkles.
+  'savvy-mago': {
+    palette: SAVVY_PALETTE,
+    rows: ['...pZp...', 'Lppppppp.', 'dccccccc.', 'dckccckc.', 'ccccccccc', 'dccccccc.'],
+    frames: [[], [[0, 1, 'Z']], [[0, 1, 'w'], [4, 0, 'y']], [[0, 1, 'Z']]],
+  },
+  // Captain (Plan): captain's cap, spyglass; raises it, looks through, lowers it.
+  'savvy-capitan': {
+    palette: SAVVY_PALETTE,
+    rows: ['..wwwww..', '.kkkZkkk.', '.ccccccc.', '.ckccckc.', 'ccccccccY', '.ccccccc.'],
+    frames: [[], [[8, 3, 'Y']], [[8, 3, 'Y'], [8, 2, 'y'], [2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[8, 3, 'Y']]],
+  },
+  // Professor (claude-code-guide): mortarboard, book in hand; the tassel swings.
+  'savvy-profesor': {
+    palette: SAVVY_PALETTE,
+    rows: ['.kkkkkkk.', '...kkk.Z.', '.ccccccZ.', '.ckccckc.', 'ccccccccb', '.cccccccb'],
+    frames: [[], [[7, 2, '.'], [8, 2, 'Z']], [[7, 2, '.'], [8, 1, 'Z'], [7, 1, '.']], [[7, 2, '.'], [8, 2, 'Z']]],
+  },
+  // Superhero (general-purpose): mask, emblem, red cape; the cape flutters.
+  'savvy-heroe': {
+    palette: SAVVY_PALETTE,
+    rows: ['.........', '..kkkkk..', 'rcccccccr', 'rkwkckwkr', 'ccccccccc', 'rccZZcccr'],
+    frames: [[], [[0, 5, '.'], [8, 5, '.'], [0, 3, 'R'], [8, 3, 'R']], [[0, 5, '.'], [8, 5, '.'], [0, 2, 'R'], [8, 2, 'R']], [[0, 5, '.'], [8, 5, '.'], [0, 3, 'R'], [8, 3, 'R']]],
+    blinks: false,
+  },
+}
+Object.assign(MINI_COSTUMES, SAVVY_CREW)
+
+// Which crew dresses the method's agent types: savvy (the default) or obra, switched by
+// `/cuadrilla` and kept across sessions in the store. The `costumes` option still wins.
+type Crew = 'savvy' | 'obra'
+const CREW_STORE_KEY = 'crew'
+const CREWS: Record<Crew, Record<string, string>> = {
+  savvy: {
+    explorador: 'savvy-safari', ejecutor: 'savvy-robot', revisor: 'savvy-juez', consejero: 'savvy-mago',
+    Plan: 'savvy-capitan', 'claude-code-guide': 'savvy-profesor', 'general-purpose': 'savvy-heroe',
+  },
+  obra: {
+    explorador: 'obra-topografo', ejecutor: 'obra-obrero', revisor: 'obra-interventor', consejero: 'obra-arquitecto',
+    Plan: 'obra-plan', 'claude-code-guide': 'obra-guia', 'general-purpose': 'obra-maestro',
+  },
+}
+// Module scope is fine here: session.start reads it from the store again on every (re)load.
+let crew: Crew = 'savvy'
+const crewOf = (v: unknown): Crew | null => (v === 'savvy' || v === 'obra' ? v : null)
+
 // On the desktop the crew is the mini costume at three times its size, its legs in the
 // walk's two groups (`la`, `lb`) so the desktop's CSS walks them as the other crabs.
 const OBRA_SCALE = 3
-for (const [id, c] of Object.entries(OBRA)) {
+for (const [id, c] of [...Object.entries(OBRA), ...Object.entries(SAVVY_CREW)]) {
   COSTUMES[id] = f => {
     const rows = [...c.rows]
     if (rows.length === MINI_BODY.length + 2) rows.push(MINI_LEGS, MINI_LEGS)
@@ -1063,6 +1133,10 @@ const progressOf = (a: AgentRun): number | null => {
   return null
 }
 
+// Steps done as shown: a finished agent counts all of them, since it may end without
+// reporting the last; a running or failed one shows what it reported.
+const stepsDone = (a: AgentRun): number => (a.status === 'done' && a.stepTotal ? a.stepTotal : (a.stepDone ?? 0))
+
 const ctxOf = (a: AgentRun): number => (a.contextMax ? Math.min(100, Math.round((a.contextTokens / a.contextMax) * 100)) : 0)
 
 const agentSvg = (W: number, a: AgentRun, at: number): string => {
@@ -1078,7 +1152,7 @@ const agentSvg = (W: number, a: AgentRun, at: number): string => {
   const barW = textW
   const progress = progressOf(a)
   const stats = `${s.ctx} ${ctx}% · ${fmtTokens(a.contextTokens)}  ≈${fmtCost(a.costUsd)}  ${fmtTime(elapsed(a, at))}`
-  const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
+  const steps = a.stepTotal ? `${stepsDone(a)}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
   const stepsW = Math.max(0, barW - textWidth(stats, 11) - 12)
   // Without reported steps the bar falls back to the context, drawn grey.
   const fillW = Math.round(barW * (progress ?? ctx / 100))
@@ -1172,6 +1246,7 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     lang = await detectLang($, options.language)
+    crew = crewOf(await $.store.get(CREW_STORE_KEY).catch(() => null)) ?? 'savvy'
     await $.tool.register({
       name: 'progress',
       description:
@@ -1223,6 +1298,10 @@ export const register: Register = (on, options) => {
       isDeferred: false,
     })
     await $.command.register({
+      name: 'cuadrilla',
+      description: 'Switch the crew that dresses the agents: savvy (the default) or obra; with no argument, say which is on',
+    })
+    await $.command.register({
       name: 'agents-info',
       description: 'Show or hide the panel of subagents: running, finished and planned, with model, context, cost and time',
     })
@@ -1257,6 +1336,17 @@ export const register: Register = (on, options) => {
       })()
     })
     return started
+  })
+
+  on('command.run', { command: 'cuadrilla' }, async ($, e) => {
+    const asked = crewOf((e.args ?? '').trim().toLowerCase())
+    if (!asked) return { text: `Cuadrilla: ${crew}. Cambia con /cuadrilla savvy o /cuadrilla obra.` }
+    crew = asked
+    await $.store.set(CREW_STORE_KEY, asked)
+    // Redraw the panel and the band with the new crew.
+    const at = await $.clock.now()
+    await update($, now, () => at)
+    return { text: `Cuadrilla: ${asked}.` }
   })
 
   on('command.run', { command: 'agents-info' }, async ($, e) => {
@@ -1549,7 +1639,7 @@ export const register: Register = (on, options) => {
       const progress = progressOf(a)
       const n = list.indexOf(a) + 1
       const [filled, rest] = thinBar(progress === null ? ctx : progress * 100, barW)
-      const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
+      const steps = a.stepTotal ? `${stepsDone(a)}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
       const stats = `${s.ctx} ${ctx}% · ${fmtTokens(a.contextTokens)}  ≈${fmtCost(a.costUsd)}`
       const indent = hasRowCrabs ? '' : '  '
       const lines = (
