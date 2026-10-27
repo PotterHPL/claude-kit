@@ -54,7 +54,7 @@ type ProgressInput = {
 // Language: the `language` option, else Claude Code's `language` setting, else the
 // process locale; English when nothing says Hebrew or Russian.
 
-type Lang = 'en' | 'ru' | 'he'
+type Lang = 'en' | 'ru' | 'he' | 'es'
 
 const STRINGS = {
   en: {
@@ -86,6 +86,37 @@ const STRINGS = {
     busy: 'running',
     ctx: 'ctx',
     tier: { light: 'light', medium: 'medium', careful: 'careful', heavy: 'heavy', fable: 'fable', other: 'other' },
+    effort: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' },
+  },
+  es: {
+    pane: 'Agentes',
+    cost: 'Costo',
+    tokens: 'Tokens',
+    time: 'Tiempo',
+    collapse: 'Contraer',
+    expand: 'Expandir',
+    running: 'En curso',
+    finished: 'Terminados',
+    planned: 'Planeados',
+    empty: 'Aún no hay subagentes.',
+    round: 'ronda',
+    failed: 'error',
+    after: 'después de',
+    tokensWord: 'tokens',
+    agentsCount: 'agentes',
+    isRunning: 'en curso',
+    isFinished: 'terminado',
+    isPlanned: 'planeado',
+    opened: 'Panel de agentes abierto.',
+    closed: 'Panel de agentes cerrado.',
+    done: 'Listo',
+    plan: 'Plan',
+    design: 'Diseño',
+    tasks: 'Tareas',
+    review: 'Revisión',
+    busy: 'en curso',
+    ctx: 'ctx',
+    tier: { light: 'light', medium: 'medium', careful: 'careful', heavy: 'heavy', fable: 'fable', other: 'otro' },
     effort: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' },
   },
   ru: {
@@ -165,10 +196,11 @@ const effortWord = (effort: string): string => (tr().effort as Record<string, st
 
 const isRussian = (v: unknown): boolean => typeof v === 'string' && /^(ru|russian|рус)/i.test(v.trim())
 const isHebrew = (v: unknown): boolean => typeof v === 'string' && /^(he|iw|hebrew|עברית)/i.test(v.trim())
-const langOf = (v: unknown): Lang => (isHebrew(v) ? 'he' : isRussian(v) ? 'ru' : 'en')
+const isSpanish = (v: unknown): boolean => typeof v === 'string' && /^(es|spanish|español|espanol)/i.test(v.trim())
+const langOf = (v: unknown): Lang => (isHebrew(v) ? 'he' : isRussian(v) ? 'ru' : isSpanish(v) ? 'es' : 'en')
 
 async function detectLang($: EngineInterface, option: unknown): Promise<Lang> {
-  if (option === 'en' || option === 'ru' || option === 'he') return option
+  if (option === 'en' || option === 'ru' || option === 'he' || option === 'es') return option
   try {
     const settings = (await $.settings.read()) as Record<string, unknown>
     if (typeof settings.language === 'string' && settings.language.trim()) return langOf(settings.language)
@@ -455,10 +487,25 @@ const tierOf = (type: string): string => {
   return Object.hasOwn(TIER_COLOR, t) && bare.startsWith('savvy-') ? t : 'other'
 }
 
-// The tier a run reads as: its savvy tier, else the one its model and effort match
+// The `costumes` option: `type=costume` pairs, comma-separated, naming the costume (a
+// tier, or `explore`) an agent type wears ahead of the rule below. A plugin prefix on
+// the type (`plugin:agent`) is ignored. Module scope is fine: register sets it on every load.
+let agentTiers = new Map<string, string>()
+const agentTiersOf = (v: unknown): Map<string, string> =>
+  new Map(
+    (typeof v === 'string' ? v : '')
+      .split(',')
+      .map(pair => pair.split('=').map(s => s.trim()))
+      .filter((kv): kv is [string, string] => kv.length === 2 && !!kv[0] && !!kv[1])
+      .map(([k, c]) => [k.replace(/^[^:]*:/, ''), c.toLowerCase()]),
+  )
+
+// The tier a run reads as: the `costumes` option's for its type, its savvy tier, else the one its model and effort match
 // (TIER_MODEL): Fable is fable; on another model xhigh or max is heavy, high careful,
 // medium medium, low light. With no effort seen, other.
 const runTier = (a: AgentRun): string => {
+  const mapped = agentTiers.get(a.type.replace(/^[^:]*:/, ''))
+  if (mapped && Object.hasOwn(TIER_COLOR, mapped)) return mapped
   const savvy = tierOf(a.type)
   if (savvy !== 'other') return savvy
   if (/fable|mythos/i.test(a.model)) return 'fable'
@@ -636,6 +683,14 @@ const COSTUMES: Record<string, (f: Fill, t: string) => void> = {
 }
 
 const costumeOf = (type: string): string => (type === 'Explore' ? 'explore' : tierOf(type))
+
+// A run's costume: Explore is the pirate; otherwise the tier it reads as (runTier),
+// so an agent that is not a savvy worker dresses for its model and effort.
+const runCostume = (a: AgentRun): string => {
+  const mapped = agentTiers.get(a.type.replace(/^[^:]*:/, ''))
+  if (mapped && Object.hasOwn(MINI_COSTUMES, mapped)) return mapped
+  return a.type === 'Explore' ? 'explore' : runTier(a)
+}
 
 const CRAB_SCALE = 1.1
 
@@ -824,7 +879,8 @@ const ctxOf = (a: AgentRun): number => (a.contextMax ? Math.min(100, Math.round(
 
 const agentSvg = (W: number, a: AgentRun, at: number): string => {
   const s = tr()
-  const tier = tierOf(a.type)
+  const savvy = tierOf(a.type)
+  const tier = runTier(a)
   const color = colorOf(tier)
   const ctx = ctxOf(a)
   const textW = W - 42 - 22
@@ -841,9 +897,9 @@ const agentSvg = (W: number, a: AgentRun, at: number): string => {
   return svg(
     W,
     66,
-    `${rowCrab(W, 0, 14, costumeOf(a.type), false, a.status === 'running')}
+    `${rowCrab(W, 0, 14, runCostume(a), false, a.status === 'running')}
 <text class="t" ${startText(W, 42, 18)} font-family="${FONT}" font-size="13" font-weight="600">${xml(fitText(a.description || a.type, 13, textW))}</text>
-<text ${startText(W, 42, 34)} font-family="${FONT}" font-size="11"><tspan fill="${color}">${xml(tier === 'other' ? a.type : tierWord(tier))}</tspan><tspan class="s">  ${xml(meta.join('  ·  '))}</tspan></text>
+<text ${startText(W, 42, 34)} font-family="${FONT}" font-size="11"><tspan fill="${color}">${xml(savvy === 'other' ? a.type : tierWord(savvy))}</tspan><tspan class="s">  ${xml(meta.join('  ·  '))}</tspan></text>
 ${steps && stepsW > 30 ? `<text class="t" ${startText(W, 42, 49)} font-family="${FONT}" font-size="11" font-variant-numeric="tabular-nums">${xml(fitText(steps, 11, stepsW))}</text>` : ''}
 <text class="s" ${endText(W, 42 + barW, 49, true)} font-family="${FONT}" font-size="11" font-variant-numeric="tabular-nums">${stats}</text>
 <rect class="k" x="${mx(W, 42, barW)}" y="55" width="${barW}" height="4" rx="2"/><rect${progress === null ? ' class="m"' : ''} x="${mx(W, 42, fillW)}" y="55" width="${fillW}" height="4" rx="2"${progress === null ? '' : ` fill="${color}"`}/>
@@ -871,8 +927,8 @@ ${statusMark(mx(W, W - 8), 16, 'planned', color)}
 
 const compactSvg = (W: number, list: AgentRun[], planned: Planned[], t: ReturnType<typeof totals>): string => {
   const icons = [
-    ...list.filter(a => a.status === 'running').map(a => ({ k: costumeOf(a.type), c: colorOf(tierOf(a.type)), s: 'running', dim: false })),
-    ...list.filter(a => a.status !== 'running').map(a => ({ k: costumeOf(a.type), c: colorOf(tierOf(a.type)), s: a.status, dim: false })),
+    ...list.filter(a => a.status === 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: 'running', dim: false })),
+    ...list.filter(a => a.status !== 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: a.status, dim: false })),
     ...planned.map(p => ({ k: p.tier in TIER_COLOR ? p.tier : 'other', c: colorOf(p.tier), s: 'planned', dim: true })),
   ]
   const fit = Math.max(1, Math.floor((W - 150) / 36))
@@ -924,6 +980,7 @@ async function autoOpen($: EngineInterface, key: string): Promise<void> {
 
 export const register: Register = (on, options) => {
   crabMode = crabModeOf(options.terminalCrabs)
+  agentTiers = agentTiersOf(options.costumes)
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     lang = await detectLang($, options.language)
@@ -1001,7 +1058,7 @@ export const register: Register = (on, options) => {
         if (!running.length) return
         const k = frameAt(await $.clock.now())
         for (const a of running) {
-          const { cells } = crabCells(costumeOf(a.type), k, crabMode === 'row')
+          const { cells } = crabCells(runCostume(a), k, crabMode === 'row')
           await $.ui.blit({ requestId: PANE, key: crabKey(a), cells }).catch(() => undefined)
         }
       })()
@@ -1280,7 +1337,7 @@ export const register: Register = (on, options) => {
           key={crabKey(a)}
           columns={size.columns}
           rows={size.rows}
-          cells={crabCells(costumeOf(a.type), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
+          cells={crabCells(runCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB).cells}
         />
       )
     const row = (a: AgentRun) => {
