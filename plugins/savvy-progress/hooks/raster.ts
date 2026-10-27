@@ -146,7 +146,18 @@ export const toCells = (p: Pixels): Cells => {
       else if (top === CLEAR) words.set([LOWER, bottom, DEFAULT_COLOR], k)
       else words.set([UPPER, top, bottom], k)
     }
-  // Little-endian u32s, as the Raster reads them, on any host byte order.
+  return { columns, rows, cells: pack(words) }
+}
+
+// Cells written out glyph by glyph: [codePoint, foreground, background] each, row-major.
+export const textCells = (cells: [cp: number, fg: number, bg: number][], columns: number): Cells => {
+  const words = new Uint32Array(cells.length * 3)
+  cells.forEach((c, i) => words.set(c, i * 3))
+  return { columns, rows: Math.ceil(cells.length / columns), cells: pack(words) }
+}
+
+// Little-endian u32s, as the Raster reads them, on any host byte order.
+const pack = (words: Uint32Array): string => {
   const bytes = new Uint8Array(words.length * 4)
   words.forEach((w, i) => {
     bytes[i * 4] = w & 255
@@ -154,5 +165,5 @@ export const toCells = (p: Pixels): Cells => {
     bytes[i * 4 + 2] = (w >>> 16) & 255
     bytes[i * 4 + 3] = (w >>> 24) & 255
   })
-  return { columns, rows, cells: base64(bytes) }
+  return base64(bytes)
 }

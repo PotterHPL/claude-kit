@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRun, Flow, Panel, Phase, PlannedTask } from '../types'
-import { fade, mirror, paint, toCells } from './raster'
+import { DEFAULT_COLOR, fade, mirror, paint, textCells, toCells } from './raster'
 import type { Cells, Shift } from './raster'
 
 const flow = atom({ plugin: 'savvy-progress', key: 'flow' } as const, null)
@@ -269,6 +269,32 @@ const label = (f: Flow): string => {
 
 const ratio = (f: Flow): number => (f.isFinished ? 1 : f.total ? f.done / f.total : 0)
 
+// The running batch of agents: the last stretch in which, from one agent's start on, some
+// agent was always running. Agents launched together, or one after another while others
+// work, are one batch; it ends when all of them are done.
+const currentBatch = (list: AgentRun[]): AgentRun[] => {
+  let batch: AgentRun[] = []
+  let end = -Infinity
+  for (const a of [...list].sort((x, y) => x.startedAt - y.startedAt)) {
+    if (a.startedAt > end) batch = []
+    batch.push(a)
+    end = Math.max(end, a.status === 'running' ? Infinity : (a.endedAt ?? a.startedAt))
+  }
+  return batch
+}
+
+// The band for a batch with no savvy flow (the `band: any` option): the batch as a flow
+// delegating its tasks, done out of total.
+const batchFlow = (batch: AgentRun[], title: string): Flow => ({
+  title,
+  total: batch.length,
+  done: batch.filter(a => a.status !== 'running').length,
+  running: batch.filter(a => a.status === 'running').length,
+  phase: 'delegate',
+  isFinished: false,
+  tasks: [],
+})
+
 // Deterministic noise so the dither does not shimmer between redraws.
 const noise = (x: number, y: number): number => {
   const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453
@@ -387,6 +413,57 @@ const rowSvg = (f: Flow, W: number, isWorking: boolean): string => {
 <text class="m" ${percentAt} font-family="${FONT}" font-size="12.5" font-variant-numeric="tabular-nums">${percent}</text>
 ${CRAB_CSS}${crab(rx(W - CRAB_W + 1, crabW), 0, 'other', false, isWorking, 0.8, rtl)}
 </svg>`
+}
+
+// The terminal band as the desktop's, in one Raster row: a sparkle, then a dark track
+// with a tick at each task boundary, the filled part a pill with the label on it, its
+// ends rounded by half blocks. Colors as 0xRRGGBB.
+const hex = (c: string): number => parseInt(c.replace('#', ''), 16)
+const BAND_TRACK = 0x2c2c34
+const BAND_TICK = 0x5a5a68
+const BAND_TEXT = 0xffffff
+const SPARKLES = ['⠁⡀⠄⠂', '⠂⠁⡀⠄']
+
+const bandTrackCells = (f: Flow, width: number, frame: number): Cells => {
+  const accent = hex(f.isFinished ? DONE : ACCENT)
+  const cells: [number, number, number][] = []
+  const put = (s: string, fg: number, bg = DEFAULT_COLOR) => {
+    for (const ch of s) cells.push([ch.codePointAt(0) ?? 0x20, fg, bg])
+  }
+  put(SPARKLES[frame % 2] ?? '', accent)
+  put(' ', accent)
+  const w = Math.max(4, width - cells.length)
+  const text = ` ${label(f)} `
+  const filled = Math.min(w, Math.max(text.length + 2, Math.round(w * ratio(f))))
+  const ticks = new Set(Array.from({ length: Math.max(0, f.total - 1) }, (_, i) => Math.round((w * (i + 1)) / f.total)))
+  for (let x = 0; x < w; x++) {
+    if (x === 0) put('▐', accent)
+    else if (x < filled - 1) put(text[x - 1] ?? ' ', BAND_TEXT, accent)
+    else if (x === filled - 1) put('▌', accent, BAND_TRACK)
+    else put(ticks.has(x) ? '│' : ' ', BAND_TICK, BAND_TRACK)
+  }
+  return textCells(cells, cells.length)
+}
+
+// The band's spinner: two braille cells, a 4 × 4 field of dots. A snake of four dots runs
+// round its edge, a step a frame (FRAME_MS); standing, the whole edge is lit, faded.
+const SPIN_PATH: [x: number, y: number][] = [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [0, 2], [0, 1]]
+const SPIN_LEN = 4
+// Braille dot bits by column and row within a cell (dots 1-8).
+const BRAILLE_BIT = [
+  [0x01, 0x02, 0x04, 0x40],
+  [0x08, 0x10, 0x20, 0x80],
+]
+const BAND_SPIN_KEY = 'band-spin'
+// The band's own id, as its render hook last saw it: what a blit names to repaint the spinner.
+let bandRequestId = ''
+
+const spinnerCells = (step: number | null): Cells => {
+  const lit = step === null ? SPIN_PATH : Array.from({ length: SPIN_LEN }, (_, i): [number, number] => SPIN_PATH[(step + i) % SPIN_PATH.length] ?? [0, 0])
+  const bits = [0, 0]
+  for (const [x, y] of lit) bits[x >> 1] = (bits[x >> 1] ?? 0) | (BRAILLE_BIT[x & 1]?.[y] ?? 0)
+  const color = step === null ? hex('#7a4a3a') : hex(CLAY)
+  return textCells(bits.map((b): [number, number, number] => [0x2800 + b, color, DEFAULT_COLOR]), 2)
 }
 
 const barText = (f: Flow, width: number): string => {
@@ -1162,12 +1239,17 @@ export const register: Register = (on, options) => {
     // Walks the running agents' terminal crabs: each frame blitted into its Raster,
     // no redraw. Where none is mounted (the desktop, a closed panel) the blit is denied.
     $.clock.every(FRAME_MS, () => {
-      if (crabMode === 'off') return
       void (async () => {
         const list = await read($, agents)
         const running = list.filter(a => a.status === 'running')
         if (!running.length) return
-        const k = frameAt(await $.clock.now())
+        const ms = await $.clock.now()
+        if (bandRequestId) {
+          const { cells } = spinnerCells(Math.floor(ms / FRAME_MS) % SPIN_PATH.length)
+          await $.ui.blit({ requestId: bandRequestId, key: BAND_SPIN_KEY, cells }).catch(() => undefined)
+        }
+        if (crabMode === 'off') return
+        const k = frameAt(ms)
         for (const a of running) {
           const { cells } = crabCells(runCostume(a), k, crabMode === 'row')
           await $.ui.blit({ requestId: PANE, key: crabKey(a), cells }).catch(() => undefined)
@@ -1613,7 +1695,12 @@ export const register: Register = (on, options) => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const f = await read($, flow)
+    const reported = await read($, flow)
+    const list = await read($, agents)
+    // With no savvy flow, `band: any` draws the running batch of agents instead.
+    const batch = reported === null && options.band === 'any' ? currentBatch(list) : []
+    const isBatch = batch.some(a => a.status === 'running')
+    const f = reported ?? (isBatch ? batchFlow(batch, tr().pane) : null)
     if (f === null || e.props.hasSurvey) return next(e)
     // Draw this row with the other mods' bands beneath it. Claude Code's own placeholder ({ type: 'engine' }) is
     // never nested: the desktop drops a band that nests it.
@@ -1622,8 +1709,7 @@ export const register: Register = (on, options) => {
 
     const ui = $.ui.resolve(e)
     const { Box, Text, Button } = ui
-    const list = await read($, agents)
-    const crew = list.length + plannedOf(f, list).length
+    const crew = isBatch ? batch.length : list.length + plannedOf(f, list).length
     const isWorking = list.some(a => a.status === 'running')
     const crewButton = (
       <Button key="savvy-agents" label={`×${crew}`} plain onPress={() => void togglePane($)} />
@@ -1650,7 +1736,7 @@ export const register: Register = (on, options) => {
           <Box flexDirection={isRtl() ? 'row-reverse' : 'row'} alignItems="center" gap={1}>
             <Svg source={rowSvg(f, width, isWorking)} alt={`${f.title}: ${label(f)}, ${percent}`} width={width} height={H} />
             {crewButton}
-            {dismiss}
+            {!isBatch && dismiss}
           </Box>
           {below}
         </Box>
@@ -1660,6 +1746,33 @@ export const register: Register = (on, options) => {
     const cols = e.props.bodyColumns
     const titleW = Math.max(8, Math.min(30, f.title.length + 2, Math.floor(cols / 3)))
     const width = Math.max(6, Math.min(40, cols - titleW - 32))
+    // Where the terminal has a Raster: the desktop's band, cell by cell.
+    if (e.surface === 'terminal' && 'Raster' in ui) {
+      const { Raster } = ui
+      const frame = Math.floor((await read($, now)) / 1000) % 2
+      const trackW = Math.max(12, cols - titleW - 22)
+      const track = bandTrackCells(f, trackW, frame)
+      bandRequestId = e.requestId
+      const spin = spinnerCells(isWorking ? Math.floor((await read($, now)) / FRAME_MS) % SPIN_PATH.length : null)
+      return (
+        <Box flexDirection="column">
+          <Box flexDirection="row" gap={1}>
+            <Box width={titleW} flexShrink={0}>
+              <Text color={f.isFinished ? DONE : ACCENT}>● </Text>
+              <Text bold wrap="truncate-end">
+                {f.title}
+              </Text>
+            </Box>
+            <Raster key="band-track" columns={track.columns} rows={1} cells={track.cells} />
+            <Text dimColor>{percent}</Text>
+            <Raster key={BAND_SPIN_KEY} columns={spin.columns} rows={1} cells={spin.cells} />
+            {crewButton}
+            {!isBatch && dismiss}
+          </Box>
+          {below}
+        </Box>
+      )
+    }
     return (
       <Box flexDirection="column">
         <Box flexDirection="row" gap={2}>
@@ -1672,7 +1785,7 @@ export const register: Register = (on, options) => {
           <Text dimColor>{percent}</Text>
           <Text color={CLAY}>▣</Text>
           {crewButton}
-          {dismiss}
+          {!isBatch && dismiss}
         </Box>
         {below}
       </Box>
