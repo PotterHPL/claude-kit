@@ -656,13 +656,12 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is the crab at exactly half size, 12 × 8 pixels: body 8 × 6, eyes one
-// pixel, arms and legs two, as the full one has them at 16 × 12, two and four. Four
-// rows, as tall as an agent's four lines. Smaller, an eye could not stay one eighth
-// of the body: a pixel is the least it can be.
-const MINI_W = 12
-const MINI_H = 8
-const ROW_CRAB = { columns: MINI_W, rows: MINI_H / 2 }
+// A row crab is a small crab drawn for the terminal, 10 × 5 pixels in 3 rows: body
+// 8 wide with one-pixel eyes (an eighth of it, as the full crab's), arms and legs one
+// pixel. It sits beside an agent's title and model, a small mark rather than a block.
+const MINI_W = 10
+const MINI_H = 5
+const ROW_CRAB = { columns: MINI_W, rows: Math.ceil(MINI_H / 2) }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
 // Columns a row needs beside its crab before the crab is worth drawing.
 const ROW_TEXT_MIN = 24
@@ -680,12 +679,12 @@ const walk =
 
 // The mini crab. Walking, the leg pairs lift in turn as the full crab's do: the
 // first and third legs (`la`) one frame, the second and fourth (`lb`) the next.
-const MINI_BODY = ['..cccccccc..', '..ckcccckc..', 'cccccccccccc', 'cccccccccccc', '..cccccccc..', '..cccccccc..']
-const MINI_LEGS = '..c.c..c.c..'
-const MINI_LIFTED = ['....c....c..', '..c....c....']
+const MINI_BODY = ['.cccccccc.', '.ckcccckc.', 'cccccccccc', '.cccccccc.']
+const MINI_LEGS = '.c.c..c.c.'
+const MINI_LIFTED = ['...c....c.', '.c....c...']
 const miniCrab = (f: Fill, frame: number | null): void => {
   stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
-  stamp(f, 0, MINI_BODY.length, [MINI_LEGS, frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
+  stamp(f, 0, MINI_BODY.length, [frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
 }
 
 const cellCache = new Map<string, Cells>()
@@ -838,10 +837,12 @@ const compactSvg = (W: number, list: AgentRun[], planned: Planned[], t: ReturnTy
 
 // --- terminal drawing: the same rows in text.
 
-const ctxBar = (pct: number, width: number): string => {
-  const filled = Math.round((width * pct) / 100)
-  return '█'.repeat(filled) + '░'.repeat(Math.max(0, width - filled))
+// A thin bar, light enough to sit under a line of text: the filled part and the rest.
+const thinBar = (pct: number, width: number): [string, string] => {
+  const filled = Math.max(0, Math.min(width, Math.round((width * pct) / 100)))
+  return ['━'.repeat(filled), '━'.repeat(width - filled)]
 }
+const BAR_REST = '#3c3c3a'
 
 const STATUS_GLYPH: Record<string, string> = { running: '●', done: '✓', failed: '✗', planned: '◷' }
 
@@ -1212,7 +1213,7 @@ export const register: Register = (on, options) => {
     const stageFits = Math.floor((cols + 1) / (STAGE_CRAB.columns + 1))
     const hasStage = Raster !== null && crabMode === 'stage' && stageFits > 0 && running.length > 0
     const textCols = hasRowCrabs ? cols - ROW_CRAB.columns - 1 : cols
-    const barW = Math.max(6, Math.min(24, textCols - 4))
+    const barW = Math.max(6, Math.min(20, textCols - 18))
     const frame = frameAt(at)
     const crabOf = (a: AgentRun, size: typeof ROW_CRAB) =>
       Raster && (
@@ -1229,43 +1230,59 @@ export const register: Register = (on, options) => {
       const ctx = ctxOf(a)
       const progress = progressOf(a)
       const n = list.indexOf(a) + 1
-      const steps = a.stepTotal ? ` ${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''}` : ''
-      // Four lines, as tall as the row crab: the task, who runs it, its progress, its numbers.
+      const isRunning = a.status === 'running'
+      const [filled, rest] = thinBar(progress === null ? ctx : progress * 100, barW)
+      const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''}  ` : ''
+      // The task and its time; who runs it and what it cost; while it runs, a thin bar.
+      // Beside a crab the colored mark goes: the crab is the row's mark.
       const lines = (
-        <Box key={a.id} flexDirection="column" marginBottom={1} flexGrow={1}>
-          <Box flexDirection="row" gap={1}>
-            <Text color={color}>▣</Text>
-            <Text bold wrap="truncate-end">
-              {n}. {a.description || a.type}
+        <Box flexDirection="column" flexGrow={1}>
+          <Box flexDirection="row" justifyContent="space-between" gap={1}>
+            <Text wrap="truncate-end">
+              {!hasRowCrabs && <Text color={color}>▣ </Text>}
+              <Text bold>
+                {n}. {a.description || a.type}
+              </Text>
+              <Text color={a.status === 'failed' ? 'red' : a.status === 'done' ? 'green' : modelColor(a.model)}> {STATUS_GLYPH[a.status]}</Text>
             </Text>
-            <Text color={a.status === 'failed' ? 'red' : a.status === 'done' ? 'green' : color}>{STATUS_GLYPH[a.status]}</Text>
+            <Text dimColor>{fmtTime(elapsed(a, at))}</Text>
           </Box>
           <Text wrap="truncate-end">
-            {'  '}
-            <Text color={color}>{tier === 'other' ? a.type : tierWord(tier)}</Text>
+            {!hasRowCrabs && '  '}
+            <Text color={tier === 'other' ? undefined : color} dimColor={tier === 'other'}>
+              {tier === 'other' ? a.type : tierWord(tier)}
+            </Text>
             <Text dimColor> · </Text>
             <Text color={modelColor(a.model)} bold>
               {modelName(a.model)}
             </Text>
             <Text dimColor>
-              {a.effort ? ` · ${effortWord(a.effort)}` : ''}
+              {a.effort ? ` · ${effortWord(a.effort)}` : ''} · ≈{fmtCost(a.costUsd)}
               {a.round > 1 ? ` · ${s.round} ${a.round}` : ''}
             </Text>
           </Text>
-          <Text wrap="truncate-end">
-            {'  '}
-            {progress === null ? <Text dimColor>{ctxBar(ctx, barW)}</Text> : <Text color={color}>{ctxBar(progress * 100, barW)}</Text>}
-            <Text>{steps}</Text>
-          </Text>
-          <Text dimColor wrap="truncate-end">
-            {'  '}
-            {s.ctx} {ctx}% · {fmtTokens(a.contextTokens)} · ≈{fmtCost(a.costUsd)} · {fmtTime(elapsed(a, at))}
-          </Text>
+          {isRunning && (
+            <Text wrap="truncate-end">
+              {!hasRowCrabs && '  '}
+              <Text color={progress === null ? '#888780' : modelColor(a.model)}>{filled}</Text>
+              <Text color={BAR_REST}>{rest}</Text>
+              <Text dimColor>
+                {'  '}
+                {steps}
+                {s.ctx} {ctx}% · {fmtTokens(a.contextTokens)}
+              </Text>
+            </Text>
+          )}
         </Box>
       )
-      if (!hasRowCrabs) return lines
+      if (!hasRowCrabs)
+        return (
+          <Box key={a.id} marginBottom={1}>
+            {lines}
+          </Box>
+        )
       return (
-        <Box key={a.id} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1}>
+        <Box key={a.id} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1} marginBottom={1}>
           {crabOf(a, ROW_CRAB)}
           {lines}
         </Box>
