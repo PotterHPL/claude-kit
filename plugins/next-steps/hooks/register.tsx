@@ -160,6 +160,9 @@ export const register: Register = (on, options) => {
   // Turn over: ask the fork, detached, so the turn's completion never waits on it.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
+    // Only the main thread's turns: a subagent's turn also completes here (with its
+    // agentId), and forking then would re-read the whole main context for nothing.
+    if (e.agentId) return result
     if (e.reason !== 'answer' || e.answer.trim().length < minTurnChars) return result
     const turnId = e.turnId
     show($, { kind: 'loading', turnId })
