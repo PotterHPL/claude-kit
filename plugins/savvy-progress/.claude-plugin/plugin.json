@@ -25,7 +25,7 @@
       "type": "string",
       "title": "Open the agents panel",
       "description": "savvy: when a savvy-flow worker starts or a plan is reported; any: also when any other subagent starts, once per session; always: every time a batch of subagents starts (one starts with none running), even after the panel was closed",
-      "default": "savvy",
+      "default": "always",
       "options": [
         "savvy",
         "any",
@@ -57,7 +57,7 @@
       "type": "string",
       "title": "Ask agents for their steps",
       "description": "savvy: only savvy-flow workers are asked to report their steps; any: every subagent is asked, when the step tool is among its tools",
-      "default": "savvy",
+      "default": "any",
       "options": [
         "savvy",
         "any"

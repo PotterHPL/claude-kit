@@ -1,4 +1,17 @@
-# claude-kit
+# claude-kit (fork de TI Conaltura)
+
+> **Conaltura:** este fork trae los dos mods del estándar de TI: `savvy-progress` (con la cuadrilla de obra, la barra de
+> cada tanda de agentes y el panel en español) y `next-steps`. Se instalan desde un solo marketplace:
+>
+> ```
+> /plugin marketplace add PotterHPL/claude-kit
+> /plugin install savvy-progress@claude-kit-conaltura
+> /plugin install next-steps@claude-kit-conaltura
+> ```
+>
+> Para el panel en español: `/plugin configure savvy-progress@claude-kit-conaltura` → `language` = `es` (o el ajuste
+> `language` de Claude Code en español). La rama `conaltura` es la principal; `main` sigue al autor.
+
 
 My public skills and mods for [Claude Code](https://claude.com/claude-code), in one place. Every item is a standalone plugin under `plugins/`: install only what you need.
 

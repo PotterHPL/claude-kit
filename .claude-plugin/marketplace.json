@@ -1,7 +1,12 @@
 {
-  "name": "claude-kit",
-  "owner": { "name": "johnnyvizz", "url": "https://github.com/johnnyvizz" },
-  "metadata": { "description": "johnnyvizz's public Claude Code skills and mods." },
+  "name": "claude-kit-conaltura",
+  "owner": {
+    "name": "PotterHPL (TI Conaltura)",
+    "url": "https://github.com/PotterHPL"
+  },
+  "metadata": {
+    "description": "Conaltura's fork of johnnyvizz/claude-kit: the Claude Code mods of TI's standard (savvy-progress with the crew, next-steps)."
+  },
   "plugins": [
     {
       "name": "savvy-flow",
@@ -13,8 +18,8 @@
     {
       "name": "savvy-progress",
       "source": "./plugins/savvy-progress",
-      "description": "Mod: progress bar above the prompt and a live agents panel; made for savvy-flow, shows any subagents.",
-      "version": "1.2.1",
+      "description": "Mod: agents panel with Conaltura's crew in pixel art, in the terminal and the desktop, and a progress band for each batch of agents.",
+      "version": "1.2.1-conaltura.1",
       "category": "mod"
     },
     {
@@ -22,6 +27,13 @@
       "source": "./plugins/session-band",
       "description": "Mod: band above the prompt with turn, speed, cost, prompt cache countdown and context; notifies before the cache expires.",
       "version": "0.2.0",
+      "category": "mod"
+    },
+    {
+      "name": "next-steps",
+      "source": "./plugins/next-steps",
+      "description": "Mod: after each turn, suggests up to three next prompts above the input (from anthropics/claude-plugins-community, commit 06ec7b6, MIT).",
+      "version": "1.0.0",
       "category": "mod"
     }
   ]
