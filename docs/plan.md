@@ -143,4 +143,11 @@ salen de su `main` y no lo llevan.
   la fila crece a 4).
 - **Idea anotada (sin fase):** que la sesión principal reporte su plan con `progress` al delegar varias tareas, para ver
   «Planned» sin Savvy Flow.
-- Siguiente: **F2**.
+- **2026-10-27 · F2 cerrada** (PR #2): los 6 disfraces redibujados a 9 × 8 (4 filas, sombrero en las 2 de arriba),
+  accesorio animado en dos cuadros, astronauta que flota; «Planeados» con cangrejo atenuado; barra en los terminados.
+- **2026-10-27 · F3 cerrada** (PR #3): disfraz y color por la opción `costumes`, si no nivel de Savvy, si no
+  `Explore` = pirata, si no modelo y esfuerzo; panel en español (`language: es`, en la instalación de JD).
+- **PR al autor abiertos:** johnnyvizz/claude-kit#47 (cangrejos y filas en la terminal) y #48 (disfraz para todo
+  agente y español; depende del #47). Ramas `upstream/terminal-crabs` y `upstream/costume-map`, un commit cada una.
+  Si el autor pide cambios, se atienden en esas ramas y se traen a `conaltura`.
+- Siguiente: **F4**, maqueta del equipo de obra (7 trajes) en un Artifact.
