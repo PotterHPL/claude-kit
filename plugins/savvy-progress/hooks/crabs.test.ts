@@ -17,12 +17,12 @@ const worker = async ($: Engine, on: On) => {
 const mount = ($: Engine, surface: 'terminal' | 'desktop', columns: number) =>
   $.ui.mount({ plugin: PLUGIN, surface, component: 'Pane', requestId: 'savvy-agents', props: pane(columns) })
 
-test('terminal, row: each agent has a 8 × 3 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
+test('terminal, row: each agent has a 12 × 4 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
   await worker($, on)
   const ui = await mount($, 'terminal', 60)
   const crab = await ui.find({ type: 'Raster', key: 'crab-a1' })
   expect(crab).toBeDefined()
-  expect(crab?.props).toMatchObject({ columns: 8, rows: 3 })
+  expect(crab?.props).toMatchObject({ columns: 12, rows: 4 })
   expect(await ui.find({ type: 'Text', text: /Walking work/ })).toBeDefined()
 })
 
@@ -50,4 +50,11 @@ test('desktop: no Raster, the SVG rows as before', async ($, on) => {
   const ui = await mount($, 'desktop', 60)
   expect(await ui.find({ type: 'Raster' })).toBeUndefined()
   expect(await ui.find({ type: 'Svg' })).toBeDefined()
+})
+
+test('terminal: agents are numbered and the model is painted in its family color', async ($, on) => {
+  await worker($, on)
+  const ui = await mount($, 'terminal', 60)
+  expect(await ui.find({ type: 'Text', text: /^1\. Walking work$/ })).toBeDefined()
+  expect((await ui.find({ type: 'Text', text: /^Haiku 5\.5$/ }))?.props).toMatchObject({ color: '#1D9E75', bold: true })
 })

@@ -369,6 +369,15 @@ const TIER_COLOR: Record<string, string> = {
   other: '#888780',
 }
 
+// Each model family's color, as the tier that runs on it: the panel paints the model's name with it.
+const MODEL_COLORS: [RegExp, string][] = [
+  [/fable|mythos/i, TIER_COLOR.fable ?? '#7F77DD'],
+  [/opus/i, TIER_COLOR.heavy ?? '#D85A30'],
+  [/sonnet/i, TIER_COLOR.medium ?? '#378ADD'],
+  [/haiku/i, TIER_COLOR.light ?? '#1D9E75'],
+]
+const modelColor = (model: string): string => MODEL_COLORS.find(([re]) => re.test(model))?.[1] ?? TIER_COLOR.other ?? '#888780'
+
 // What each savvy tier runs on, for planned tasks that have no run yet.
 const colorOf = (tier: string): string => TIER_COLOR[tier] ?? '#888780'
 
@@ -647,10 +656,12 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is a mini crab drawn for the terminal, 8 × 6 pixels: three rows, as
-// tall as an agent's three lines. The full grid halved stands taller than them.
-const MINI_W = 8
-const MINI_H = 6
+// A row crab is the crab at exactly half size, 12 × 8 pixels: body 8 × 6, eyes one
+// pixel, arms and legs two, as the full one has them at 16 × 12, two and four. Four
+// rows, as tall as an agent's four lines. Smaller, an eye could not stay one eighth
+// of the body: a pixel is the least it can be.
+const MINI_W = 12
+const MINI_H = 8
 const ROW_CRAB = { columns: MINI_W, rows: MINI_H / 2 }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
 // Columns a row needs beside its crab before the crab is worth drawing.
@@ -667,12 +678,14 @@ const walk =
   cls =>
     cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
 
-// The mini crab: the top row is left for a hat; the legs shuffle between two stances.
-const MINI_BODY = ['........', '.cccccc.', '.ckcckc.', 'cccccccc', '.cccccc.']
-const MINI_LEGS = ['.c.cc.c.', 'c.c..c.c']
-const miniCrab = (f: Fill, frame: number): void => {
+// The mini crab. Walking, the leg pairs lift in turn as the full crab's do: the
+// first and third legs (`la`) one frame, the second and fourth (`lb`) the next.
+const MINI_BODY = ['..cccccccc..', '..ckcccckc..', 'cccccccccccc', 'cccccccccccc', '..cccccccc..', '..cccccccc..']
+const MINI_LEGS = '..c.c..c.c..'
+const MINI_LIFTED = ['....c....c..', '..c....c....']
+const miniCrab = (f: Fill, frame: number | null): void => {
   stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
-  stamp(f, 0, MINI_BODY.length, [MINI_LEGS[frame % 2] ?? ''], { c: CLAY })
+  stamp(f, 0, MINI_BODY.length, [MINI_LEGS, frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
 }
 
 const cellCache = new Map<string, Cells>()
@@ -684,7 +697,7 @@ const crabCells = (costume: string, frame: number | null, isMini: boolean): Cell
   if (hit) return hit
   const draw = COSTUMES[costume] ?? ((g: Fill) => crabBody(g))
   let p = isMini
-    ? paint(f => miniCrab(f, frame ?? 0), MINI_W, MINI_H)
+    ? paint(f => miniCrab(f, frame), MINI_W, MINI_H)
     : paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
   if (isRtl()) p = mirror(p)
   const cells = toCells(p)
@@ -1199,7 +1212,7 @@ export const register: Register = (on, options) => {
     const stageFits = Math.floor((cols + 1) / (STAGE_CRAB.columns + 1))
     const hasStage = Raster !== null && crabMode === 'stage' && stageFits > 0 && running.length > 0
     const textCols = hasRowCrabs ? cols - ROW_CRAB.columns - 1 : cols
-    const barW = Math.max(6, Math.min(20, textCols - 34))
+    const barW = Math.max(6, Math.min(24, textCols - 4))
     const frame = frameAt(at)
     const crabOf = (a: AgentRun, size: typeof ROW_CRAB) =>
       Raster && (
@@ -1215,29 +1228,38 @@ export const register: Register = (on, options) => {
       const color = colorOf(tier)
       const ctx = ctxOf(a)
       const progress = progressOf(a)
-      const model = runModel(a)
-      const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''} · ` : ''
+      const n = list.indexOf(a) + 1
+      const steps = a.stepTotal ? ` ${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' ' + a.stepNote : ''}` : ''
+      // Four lines, as tall as the row crab: the task, who runs it, its progress, its numbers.
       const lines = (
         <Box key={a.id} flexDirection="column" marginBottom={1} flexGrow={1}>
           <Box flexDirection="row" gap={1}>
             <Text color={color}>▣</Text>
             <Text bold wrap="truncate-end">
-              {a.description || a.type}
+              {n}. {a.description || a.type}
             </Text>
             <Text color={a.status === 'failed' ? 'red' : a.status === 'done' ? 'green' : color}>{STATUS_GLYPH[a.status]}</Text>
           </Box>
-          <Text dimColor wrap="truncate-end">
+          <Text wrap="truncate-end">
             {'  '}
-            {tier === 'other' ? a.type : tierWord(tier)} · {model}
-            {a.round > 1 ? ` · ${s.round} ${a.round}` : ''}
+            <Text color={color}>{tier === 'other' ? a.type : tierWord(tier)}</Text>
+            <Text dimColor> · </Text>
+            <Text color={modelColor(a.model)} bold>
+              {modelName(a.model)}
+            </Text>
+            <Text dimColor>
+              {a.effort ? ` · ${effortWord(a.effort)}` : ''}
+              {a.round > 1 ? ` · ${s.round} ${a.round}` : ''}
+            </Text>
           </Text>
           <Text wrap="truncate-end">
             {'  '}
             {progress === null ? <Text dimColor>{ctxBar(ctx, barW)}</Text> : <Text color={color}>{ctxBar(progress * 100, barW)}</Text>}
-            <Text dimColor>
-              {' '}
-              {steps}{s.ctx} {ctx}% · {fmtTokens(a.contextTokens)} ≈{fmtCost(a.costUsd)} {fmtTime(elapsed(a, at))}
-            </Text>
+            <Text>{steps}</Text>
+          </Text>
+          <Text dimColor wrap="truncate-end">
+            {'  '}
+            {s.ctx} {ctx}% · {fmtTokens(a.contextTokens)} · ≈{fmtCost(a.costUsd)} · {fmtTime(elapsed(a, at))}
           </Text>
         </Box>
       )
