@@ -139,3 +139,12 @@ test('autoOpen always: the panel opens again for each batch of agents', { option
   await spawn(3)
   expect(opens).toBe(2)
 })
+
+test('terminal: a finished agent counts all its steps, even if it skipped the last report', async ($, on) => {
+  on('turn.complete', () => ({ text: '' }) as never)
+  await worker($, on)
+  await $.tool.call({ tool: 'mcp__savvy-progress__step', done: 2, total: 3, note: 'Ping terminado', agentId: 'a1' } as never)
+  await ($.turn.complete as (e: unknown) => Promise<unknown>)({ agentId: 'a1', reason: 'answer', answer: 'ok' })
+  const ui = await mount($, 'terminal', 60)
+  expect(await ui.find({ type: 'Text', text: /3\/3 · Ping terminado/ })).toBeDefined()
+})

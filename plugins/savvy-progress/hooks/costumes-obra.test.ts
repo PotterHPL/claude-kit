@@ -32,9 +32,19 @@ test('by default each agent type of the method wears its own crew costume', asyn
   expect(new Set(cells).size).toBe(CREW.length)
 })
 
-test('the costumes option can still send a type back to the rule', { options: { costumes: '' } }, async ($, on) => {
+test('/cuadrilla obra switches the method agents to the construction crew', async ($, on) => {
+  mock.store(on)
+  const ui = await spawnAll($, on, ['revisor'])
+  const savvy = await cellsOf(ui, 'a1')
+  const answer = await ($.command.run as (e: unknown) => Promise<{ text?: string }>)({ command: 'cuadrilla', args: 'obra' })
+  expect(answer.text).toContain('obra')
+  // The command redraws the panel: the same agent now wears the construction costume.
+  expect(await cellsOf(ui, 'a1')).not.toBe(savvy)
+})
+
+test('the costumes option wins over the crew', { options: { costumes: 'revisor=other' } }, async ($, on) => {
   const ui = await spawnAll($, on, ['revisor', 'some-other-agent'])
-  // No map: both are other agents with no effort seen, the plain crab.
+  // Both are the plain crab: revisor by the option, the other by the rule (no effort seen).
   expect(await cellsOf(ui, 'a1')).toBe(await cellsOf(ui, 'a2'))
 })
 
@@ -58,5 +68,6 @@ test('desktop: the crew is drawn too', async ($, on) => {
   await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'Review', subagentType: 'revisor', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
   const ui = await $.ui.mount({ plugin: PLUGIN, surface: 'desktop', component: 'Pane', requestId: 'savvy-agents', props: pane })
   const svgs = await ui.findAll({ type: 'Svg' })
-  expect(svgs.some(s => String(s.props.source).includes('#125160'))).toBe(true)
+  // The savvy crew's judge: a white wig over the crab.
+  expect(svgs.some(s => String(s.props.source).includes('#F8F6F1'))).toBe(true)
 })

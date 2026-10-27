@@ -34,7 +34,17 @@ Install instructions are in the [repository README](../../README.md).
 
 ## Conaltura fork
 
-This fork (`PotterHPL/claude-kit`, branch `conaltura`) adds a crew for the agent types of TI's method and maps them by default through `costumes`:
+This fork dresses the agent types of TI's method with one of two crews, switched by `/cuadrilla`:
+
+- **`/cuadrilla savvy`** (the default): characters in the line of the author's costumes. `explorador` is a safari explorer, `ejecutor` a robot, `revisor` a judge, `consejero` a wizard, `Plan` a captain, `claude-code-guide` a professor and `general-purpose` a superhero.
+- **`/cuadrilla obra`**: the construction crew below.
+
+`/cuadrilla` with no argument says which crew is on; the choice is kept across sessions. The `costumes` option still wins over the crew. Any other agent dresses as before: its savvy tier, `Explore` as the pirate, or its model and effort.
+
+A finished agent's steps read as complete (`3/3`), since an agent may end without reporting its last step.
+
+### The construction crew
+
 
 | Agent type | Costume | Work cycle (4 frames) |
 |---|---|---|
