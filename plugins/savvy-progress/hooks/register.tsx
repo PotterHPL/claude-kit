@@ -1271,6 +1271,11 @@ export const register: Register = (on, options) => {
       await autoOpen($, f && !f.isFinished ? f.title : 'savvy-flow')
     } else if (options.autoOpen === 'any') {
       await autoOpen($, 'any-agent')
+    } else if (options.autoOpen === 'always') {
+      // Each batch opens it: an agent that starts with no other running begins one. A
+      // panel the person closes mid-batch stays closed until the next batch.
+      const others = (await read($, agents)).filter(a => a.status === 'running' && a.id !== (started.agentId ?? e.tool_use_id))
+      if (!others.length) await autoOpen($, `batch-${started.agentId ?? e.tool_use_id}`)
     }
     return started
   })

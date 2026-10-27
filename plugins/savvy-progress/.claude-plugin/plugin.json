@@ -24,11 +24,12 @@
     "autoOpen": {
       "type": "string",
       "title": "Open the agents panel",
-      "description": "savvy: when a savvy-flow worker starts or a plan is reported; any: also when any other subagent starts",
+      "description": "savvy: when a savvy-flow worker starts or a plan is reported; any: also when any other subagent starts, once per session; always: every time a batch of subagents starts (one starts with none running), even after the panel was closed",
       "default": "savvy",
       "options": [
         "savvy",
-        "any"
+        "any",
+        "always"
       ]
     },
     "terminalCrabs": {

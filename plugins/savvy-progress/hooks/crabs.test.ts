@@ -116,3 +116,26 @@ test('terminal: a planned task stands as a faded crab in its tier costume', asyn
   expect((await ui.find({ type: 'Raster', key: 'crab-plan-1' }))?.props).toMatchObject({ columns: 9, rows: 4 })
   expect(await ui.find({ type: 'Text', text: /1\. Review/ })).toBeDefined()
 })
+
+test('autoOpen always: the panel opens again for each batch of agents', { options: { autoOpen: 'always' } }, async ($, on) => {
+  mock.clock(on)
+  let opens = 0
+  on('ui.open', () => {
+    opens++
+    return { value: { isPlaced: true } }
+  })
+  on('turn.complete', () => ({ text: '' }) as never)
+  let n = 0
+  on('agent.spawn', () => ({ model: 'claude-haiku-5-5', agentId: `a${++n}` }))
+  const spawn = (i: number) =>
+    $.agent.spawn({ tool_use_id: `t${i}`, prompt: 'p', description: `work ${i}`, subagentType: 'general-purpose', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
+  // First batch: two agents together open it once.
+  await spawn(1)
+  await spawn(2)
+  expect(opens).toBe(1)
+  await ($.turn.complete as (e: unknown) => Promise<unknown>)({ agentId: 'a1', reason: 'answer', answer: 'ok' })
+  await ($.turn.complete as (e: unknown) => Promise<unknown>)({ agentId: 'a2', reason: 'answer', answer: 'ok' })
+  // Second batch, after all finished: it opens again.
+  await spawn(3)
+  expect(opens).toBe(2)
+})
