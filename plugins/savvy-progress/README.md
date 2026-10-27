@@ -22,6 +22,6 @@ Cost is a rough estimate from token counts and a built-in per-model price table 
 
 `autoOpen`: `savvy` (default) or `any`. With `savvy` the panel opens by itself when a `savvy-*` worker starts or a plan is reported. With `any` it also opens, once per session, when any other subagent starts. `/agents-info` toggles it either way.
 
-`terminalCrabs`: `row` (default), `stage` or `off`. In the terminal the crabs are pixel art, two pixels to a cell (half blocks in true color), and the running ones walk. `row` puts a half-size crab beside each agent (16 columns by 7 rows; text only when the panel is narrower than 41 columns); `stage` draws the running agents' crabs at full size (30 by 14) side by side above the list; `off` keeps the text rows only. The desktop's crabs do not change.
+`terminalCrabs`: `row` (default), `stage` or `off`. In the terminal the crabs are pixel art, two pixels to a cell (half blocks in true color), and the running ones walk. `row` puts a mini crab beside each agent, as tall as its three lines (10 columns by 3 rows; text only when the panel is narrower than 35 columns); `stage` draws the running agents' crabs at full size (30 by 14) side by side above the list; `off` keeps the text rows only. The desktop's crabs do not change.
 
 Install instructions are in the [repository README](../../README.md).

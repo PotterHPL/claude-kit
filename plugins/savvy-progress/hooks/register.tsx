@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRun, Flow, Panel, Phase, PlannedTask } from '../types'
-import { halve, mirror, paint, toCells } from './raster'
+import { mirror, paint, toCells } from './raster'
 import type { Cells, Shift } from './raster'
 
 const flow = atom({ plugin: 'savvy-progress', key: 'flow' } as const, null)
@@ -644,34 +644,45 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is the grid at half size, its blocks shifted one pixel so the body,
-// eyes and legs (all on odd columns) stay whole: 16 × 14 pixels, 16 columns by 7 rows.
-const HALF_SHIFT = 1
-const ROW_CRAB = { columns: (CRAB_BOX + HALF_SHIFT + 1) / 2, rows: CRAB_GRID_H / 4 }
+// A row crab is a mini crab drawn for the terminal, 10 × 6 pixels: three rows, as
+// tall as an agent's three lines. The full grid halved stands taller than them.
+const MINI_W = 10
+const MINI_H = 6
+const ROW_CRAB = { columns: MINI_W, rows: MINI_H / 2 }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
 // Columns a row needs beside its crab before the crab is worth drawing.
 const ROW_TEXT_MIN = 24
 
-// Four frames a second, numbered off the clock so a redraw and a blit agree.
+// Two frames, a quarter second each, numbered off the clock so a redraw and a blit agree.
 const FRAME_MS = 250
-const frameAt = (ms: number): number => Math.floor(ms / FRAME_MS) % 4
+const frameAt = (ms: number): number => Math.floor(ms / FRAME_MS) % 2
 
-// The desktop's walk (CRAB_CSS) as frames: the leg pairs lift in turn, the body bobs.
+// The full crab's walk: the leg pairs lift in turn. No bob: one pixel of bob in
+// half-block cells reads as a jump.
 const walk =
   (k: number): Shift =>
   cls =>
-    cls === 'la' ? (k % 2 ? -1 : 0) : cls === 'lb' ? (k % 2 ? 0 : -1) : k % 2 ? 0 : 1
+    cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
+
+// The mini crab: the top row is left for a hat; the legs shuffle between two stances.
+const MINI_BODY = ['..........', '.cccccccc.', '.ckcccckc.', 'cccccccccc', '.cccccccc.']
+const MINI_LEGS = ['.c.c..c.c.', '..c.cc.c..']
+const miniCrab = (f: Fill, frame: number): void => {
+  stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
+  stamp(f, 0, MINI_BODY.length, [MINI_LEGS[frame % 2] ?? ''], { c: CLAY })
+}
 
 const cellCache = new Map<string, Cells>()
 
 // `frame` null: standing still.
-const crabCells = (costume: string, frame: number | null, isHalf: boolean): Cells => {
-  const id = `${costume}|${frame}|${isHalf}|${isRtl()}`
+const crabCells = (costume: string, frame: number | null, isMini: boolean): Cells => {
+  const id = `${costume}|${frame}|${isMini}|${isRtl()}`
   const hit = cellCache.get(id)
   if (hit) return hit
   const draw = COSTUMES[costume] ?? ((g: Fill) => crabBody(g))
-  let p = paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
-  if (isHalf) p = halve(p, HALF_SHIFT)
+  let p = isMini
+    ? paint(f => miniCrab(f, frame ?? 0), MINI_W, MINI_H)
+    : paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
   if (isRtl()) p = mirror(p)
   const cells = toCells(p)
   cellCache.set(id, cells)
