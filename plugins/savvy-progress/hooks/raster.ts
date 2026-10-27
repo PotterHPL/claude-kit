@@ -55,6 +55,18 @@ export const paint = (draw: (f: Fill) => void, width: number, height: number, sh
   return { width, height, px }
 }
 
+// Mixes every painted pixel toward `ground`, keeping `alpha` of its own color: what
+// an opacity would show over that background.
+export const fade = (p: Pixels, alpha: number, ground: number): Pixels => {
+  const mix = (c: number, shift: number) => {
+    const v = (c >> shift) & 255
+    const g = (ground >> shift) & 255
+    return Math.round(v * alpha + g * (1 - alpha)) << shift
+  }
+  const px = p.px.map(c => (c === CLEAR ? CLEAR : mix(c, 16) | mix(c, 8) | mix(c, 0)))
+  return { ...p, px }
+}
+
 // Flips the grid left to right, for a crab that faces left.
 export const mirror = (p: Pixels): Pixels => {
   const px = new Int32Array(p.px.length)

@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRun, Flow, Panel, Phase, PlannedTask } from '../types'
-import { mirror, paint, toCells } from './raster'
+import { fade, mirror, paint, toCells } from './raster'
 import type { Cells, Shift } from './raster'
 
 const flow = atom({ plugin: 'savvy-progress', key: 'flow' } as const, null)
@@ -667,12 +667,12 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is a small crab drawn for the terminal, 9 × 6 pixels in 3 rows: body
-// 7 wide with one-pixel eyes, arms one pixel, legs two. It sits beside an agent's
-// title and model, a small mark rather than a block.
+// A row crab is a small crab drawn for the terminal, 9 × 8 pixels in 4 rows, as tall
+// as an agent's four lines: two rows of hat, then a body 7 wide with one-pixel eyes
+// and arms, then legs two pixels long. A small mark beside the text, not a block.
 const MINI_W = 9
-const MINI_H = 6
-const ROW_CRAB = { columns: MINI_W, rows: Math.ceil(MINI_H / 2) }
+const MINI_H = 8
+const ROW_CRAB = { columns: MINI_W, rows: MINI_H / 2 }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
 // Blank lines between two agents in the terminal.
 const ROW_GAP = 2
@@ -690,28 +690,69 @@ const walk =
   cls =>
     cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
 
-// The mini crab. Walking, the leg pairs lift in turn as the full crab's do, a pixel
-// shorter rather than gone: the first and third legs (`la`) one frame, the second
-// and fourth (`lb`) the next. A one-pixel leg lifted would vanish and read as a flicker.
+// The mini crabs, one per costume, each the full crab's costume redrawn at this size:
+// the hat in the two rows above the body, the prop beside it. `frames` are the pixels
+// each of the two frames changes while it works (the prop's motion: a blink, a swing);
+// `walks` false keeps the legs still (the astronaut floats). Walking, the leg pairs
+// lift in turn, a pixel shorter rather than gone: a one-pixel leg lifted would vanish
+// and read as a flicker.
+type MiniCostume = { rows: string[]; frames?: [x: number, y: number, ch: string][][]; walks?: false }
+
+const MINI_PALETTE: Record<string, string> = {
+  c: CLAY, k: INK, K: '#55514C', w: '#F8F6F1', G: '#E6E8EE', g: '#C9CCD2', y: '#F5C542', Y: '#C99A1E',
+  b: '#7A4A26', B: '#5A3519', l: '#A9D6F5', s: '#8E929A', P: '#4A4A48', Z: '#F5C542',
+  p: TIER_COLOR.fable ?? '#7F77DD', r: TIER_COLOR.light ?? '#1D9E75', u: TIER_COLOR.medium ?? '#378ADD', a: TIER_COLOR.careful ?? '#BA7517',
+}
+const MINI_HATLESS = ['.........', '.........']
 const MINI_BODY = ['.ccccccc.', '.ckccckc.', 'ccccccccc', '.ccccccc.']
 const MINI_LEGS = '.c.c.c.c.'
 const MINI_LIFTED = ['...c...c.', '.c...c...']
-const miniCrab = (f: Fill, frame: number | null): void => {
-  stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
-  stamp(f, 0, MINI_BODY.length, [MINI_LEGS, frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
+
+const MINI_COSTUMES: Record<string, MiniCostume> = {
+  other: { rows: [...MINI_HATLESS, ...MINI_BODY] },
+  // Astronaut: the dome around the body, the antenna; floats, the star blinks.
+  fable: { rows: ['....p...Z', '.GGGGGGG.', 'GcccccccG', 'GckccckcG', 'ccccccccc', 'GccppcccG'], frames: [[], [[8, 0, '.']]], walks: false },
+  // Detective: deerstalker; the magnifier glints.
+  heavy: { rows: ['..bbbbb.s', '.BBBBBBBl', '.ccccccc.', '.ckccckc.', 'ccccccccb', '.ccccccc.'], frames: [[], [[8, 1, 'w']]] },
+  // Engineer: hard hat; the wrench turns.
+  careful: { rows: ['..yyyyy..', '.YYYaYYY.', '.ccccccc.', '.ckccckc.', 'sccccccc.', '.ccccccc.'], frames: [[], [[0, 4, 'c'], [0, 3, 's']]] },
+  // Chef: toque and band; the omelette leaves the pan.
+  medium: { rows: ['.ww.w.ww.', '.wwwwwww.', '.uuuuuuu.', '.ckccckc.', 'ccccccPPP', '.ccccccc.'], frames: [[], [[8, 3, 'y']]] },
+  // Racer: helmet and visor; the flag flutters.
+  light: { rows: ['..rrwrr.w', '.rrrwrrrs', '.ccccccc.', '.kkkkkkk.', 'ccccccccs', '.ccccccc.'], frames: [[], [[8, 0, 'K']]] },
+  // Pirate: tricorn, band and eyepatch; the cutlass rises.
+  explore: { rows: ['.K.KKK.K.', '.KKKKKKK.', '.ZZZZZZZ.', '.ckcckkc.', 'ccccccccs', '.ccccccc.'], frames: [[], [[8, 4, 'c'], [8, 3, 's']]] },
 }
+
+const miniCrab = (f: Fill, costume: string, frame: number | null): void => {
+  const c = MINI_COSTUMES[costume] ?? MINI_COSTUMES.other ?? { rows: [] }
+  const rows = c.rows.map(r => [...r])
+  for (const [x, y, ch] of frame === null ? [] : (c.frames?.[frame % 2] ?? [])) {
+    const row = rows[y]
+    if (row && x < row.length) row[x] = ch
+  }
+  stamp(f, 0, 0, rows.map(r => r.join('')), MINI_PALETTE)
+  const lifted = frame === null || c.walks === false ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)
+  stamp(f, 0, rows.length, [MINI_LEGS, lifted], MINI_PALETTE)
+}
+
+// Planned tasks' crabs are drawn faded, as the desktop draws them at 45% opacity: mixed
+// toward a dark terminal's background, which most are.
+const FADE = 0.45
+const FADE_GROUND = 0x1e1e1e
 
 const cellCache = new Map<string, Cells>()
 
 // `frame` null: standing still.
-const crabCells = (costume: string, frame: number | null, isMini: boolean): Cells => {
-  const id = `${costume}|${frame}|${isMini}|${isRtl()}`
+const crabCells = (costume: string, frame: number | null, isMini: boolean, isFaded = false): Cells => {
+  const id = `${costume}|${frame}|${isMini}|${isFaded}|${isRtl()}`
   const hit = cellCache.get(id)
   if (hit) return hit
   const draw = COSTUMES[costume] ?? ((g: Fill) => crabBody(g))
   let p = isMini
-    ? paint(f => miniCrab(f, frame), MINI_W, MINI_H)
+    ? paint(f => miniCrab(f, costume, frame), MINI_W, MINI_H)
     : paint(f => draw(f, colorOf(costume)), CRAB_BOX, CRAB_GRID_H, frame === null ? undefined : walk(frame))
+  if (isFaded) p = fade(p, FADE, FADE_GROUND)
   if (isRtl()) p = mirror(p)
   const cells = toCells(p)
   cellCache.set(id, cells)
@@ -1252,7 +1293,6 @@ export const register: Register = (on, options) => {
       const ctx = ctxOf(a)
       const progress = progressOf(a)
       const n = list.indexOf(a) + 1
-      const isRunning = a.status === 'running'
       const [filled, rest] = thinBar(progress === null ? ctx : progress * 100, barW)
       const steps = a.stepTotal ? `${a.stepDone ?? 0}/${a.stepTotal}${a.stepNote ? ' · ' + a.stepNote : ''}` : ''
       const stats = `${s.ctx} ${ctx}% · ${fmtTokens(a.contextTokens)}  ≈${fmtCost(a.costUsd)}`
@@ -1285,13 +1325,11 @@ export const register: Register = (on, options) => {
             </Text>
             <Text dimColor>{stats}</Text>
           </Box>
-          {isRunning && (
-            <Text wrap="truncate-end">
-              {indent}
-              <Text color={progress === null ? TIER_COLOR.other : color}>{filled}</Text>
-              <Text color={BAR_REST}>{rest}</Text>
-            </Text>
-          )}
+          <Text wrap="truncate-end">
+            {indent}
+            <Text color={a.status === 'failed' ? 'red' : progress === null ? TIER_COLOR.other : color}>{filled}</Text>
+            <Text color={BAR_REST}>{rest}</Text>
+          </Text>
         </Box>
       )
       if (!hasRowCrabs)
@@ -1366,16 +1404,32 @@ export const register: Register = (on, options) => {
             )}
             {planned.map(pl => {
               const tier = pl.tier in TIER_COLOR ? pl.tier : 'other'
-              return (
-                <Box key={`plan-${pl.n}`} flexDirection="column" marginBottom={1}>
+              const lines = (
+                <Box flexDirection="column" flexGrow={1}>
                   <Text dimColor wrap="truncate-end">
-                    <Text color={colorOf(tier)}>▢</Text> {pl.n}. {pl.title} ◷
+                    {!hasRowCrabs && <Text color={colorOf(tier)}>▢ </Text>}
+                    {pl.n}. {pl.title} ◷
                   </Text>
-                  <Text dimColor wrap="truncate-end">
-                    {'  '}
-                    {tierWord(tier)} · {tierModel(tier)}
-                    {pl.after.length ? ` · ${s.after} ${pl.after.join(', ')}` : ''}
+                  <Text wrap="truncate-end">
+                    {hasRowCrabs ? '' : '  '}
+                    <Text color={colorOf(tier)}>{tierWord(tier)}</Text>
+                    <Text dimColor>
+                      {'  '}
+                      {tierModel(tier)}
+                      {pl.after.length ? ` · ${s.after} ${pl.after.join(', ')}` : ''}
+                    </Text>
                   </Text>
+                </Box>
+              )
+              // A planned task's crab stands faded in its tier's costume, as on the desktop.
+              return Raster && hasRowCrabs ? (
+                <Box key={`plan-${pl.n}`} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1} marginBottom={ROW_GAP}>
+                  <Raster key={`crab-plan-${pl.n}`} columns={ROW_CRAB.columns} rows={ROW_CRAB.rows} cells={crabCells(tier, null, true, true).cells} />
+                  {lines}
+                </Box>
+              ) : (
+                <Box key={`plan-${pl.n}`} marginBottom={1}>
+                  {lines}
                 </Box>
               )
             })}

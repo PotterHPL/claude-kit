@@ -17,12 +17,12 @@ const worker = async ($: Engine, on: On) => {
 const mount = ($: Engine, surface: 'terminal' | 'desktop', columns: number) =>
   $.ui.mount({ plugin: PLUGIN, surface, component: 'Pane', requestId: 'savvy-agents', props: pane(columns) })
 
-test('terminal, row: each agent has a 9 × 3 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
+test('terminal, row: each agent has a 9 × 4 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
   await worker($, on)
   const ui = await mount($, 'terminal', 60)
   const crab = await ui.find({ type: 'Raster', key: 'crab-a1' })
   expect(crab).toBeDefined()
-  expect(crab?.props).toMatchObject({ columns: 9, rows: 3 })
+  expect(crab?.props).toMatchObject({ columns: 9, rows: 4 })
   expect(await ui.find({ type: 'Text', text: /Walking work/ })).toBeDefined()
 })
 
@@ -93,3 +93,26 @@ for (const [reportSteps, isAsked] of [['savvy', false], ['any', true]] as const)
     expect(prompt.includes('mcp__savvy-progress__step')).toBe(isAsked)
   })
 }
+
+test('terminal: a savvy tier wears its costume, another agent the plain crab', async ($, on) => {
+  mock.clock(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  let n = 0
+  on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: `a${++n}` }))
+  for (const type of ['savvy-careful', 'general-purpose'])
+    await $.agent.spawn({ tool_use_id: `t-${type}`, prompt: 'p', description: type, subagentType: type, provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
+  const ui = await mount($, 'terminal', 60)
+  const careful = await ui.find({ type: 'Raster', key: 'crab-a1' })
+  const plain = await ui.find({ type: 'Raster', key: 'crab-a2' })
+  expect(careful?.props.cells).toBeDefined()
+  expect(careful?.props.cells).not.toBe(plain?.props.cells)
+})
+
+test('terminal: a planned task stands as a faded crab in its tier costume', async ($, on) => {
+  mock.clock(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  await $.tool.call({ tool: 'mcp__savvy-progress__progress', title: 'Plan', phase: 'delegate', tasks: [{ title: 'Review', tier: 'careful' }] } as never)
+  const ui = await mount($, 'terminal', 60)
+  expect((await ui.find({ type: 'Raster', key: 'crab-plan-1' }))?.props).toMatchObject({ columns: 9, rows: 4 })
+  expect(await ui.find({ type: 'Text', text: /1\. Review/ })).toBeDefined()
+})
