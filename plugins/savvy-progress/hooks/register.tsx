@@ -656,13 +656,15 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is a small crab drawn for the terminal, 10 × 6 pixels in 3 rows: body
-// 8 wide with one-pixel eyes (an eighth of it, as the full crab's), arms one pixel,
-// legs two. It sits beside an agent's title and model, a small mark rather than a block.
-const MINI_W = 10
+// A row crab is a small crab drawn for the terminal, 9 × 6 pixels in 3 rows: body
+// 7 wide with one-pixel eyes, arms one pixel, legs two. It sits beside an agent's
+// title and model, a small mark rather than a block.
+const MINI_W = 9
 const MINI_H = 6
 const ROW_CRAB = { columns: MINI_W, rows: Math.ceil(MINI_H / 2) }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
+// Blank lines between two agents in the terminal.
+const ROW_GAP = 2
 // Columns a row needs beside its crab before the crab is worth drawing.
 const ROW_TEXT_MIN = 24
 
@@ -680,9 +682,9 @@ const walk =
 // The mini crab. Walking, the leg pairs lift in turn as the full crab's do, a pixel
 // shorter rather than gone: the first and third legs (`la`) one frame, the second
 // and fourth (`lb`) the next. A one-pixel leg lifted would vanish and read as a flicker.
-const MINI_BODY = ['.cccccccc.', '.ckcccckc.', 'cccccccccc', '.cccccccc.']
-const MINI_LEGS = '.c.c..c.c.'
-const MINI_LIFTED = ['...c....c.', '.c....c...']
+const MINI_BODY = ['.ccccccc.', '.ckccckc.', 'ccccccccc', '.ccccccc.']
+const MINI_LEGS = '.c.c.c.c.'
+const MINI_LIFTED = ['...c...c.', '.c...c...']
 const miniCrab = (f: Fill, frame: number | null): void => {
   stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
   stamp(f, 0, MINI_BODY.length, [MINI_LEGS, frame === null ? MINI_LEGS : (MINI_LIFTED[frame % 2] ?? MINI_LEGS)], { c: CLAY })
@@ -1278,12 +1280,12 @@ export const register: Register = (on, options) => {
       )
       if (!hasRowCrabs)
         return (
-          <Box key={a.id} marginBottom={1}>
+          <Box key={a.id} marginBottom={ROW_GAP}>
             {lines}
           </Box>
         )
       return (
-        <Box key={a.id} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1} marginBottom={1}>
+        <Box key={a.id} flexDirection={isRtl() ? 'row-reverse' : 'row'} gap={1} marginBottom={ROW_GAP}>
           {crabOf(a, ROW_CRAB)}
           {lines}
         </Box>
