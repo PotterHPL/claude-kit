@@ -23,6 +23,9 @@ const STEP_BRIEF = `
 
 Progress reporting: before any other work, call \`${STEP_TOOL}\` with \`total\` (your plan in 3-8 steps) and \`done: 0\`; call it again with \`done\` and a few-word \`note\` as each step finishes. It only draws a progress bar.`
 const PANE = 'savvy-agents'
+// The width the panel asks for when docked beside a fullscreen transcript: a row
+// crab, its lines and the stats beside the bar. A request; a width the person set wins.
+const DOCK_COLUMNS = 56
 const PHASES: readonly Phase[] = ['plan', 'design', 'delegate', 'review', 'close']
 const TIERS: readonly string[] = ['fable', 'heavy', 'careful', 'medium', 'light']
 // The tools' schemas are advice to the model, not a check: what a call may ask
@@ -644,9 +647,9 @@ let crabMode: CrabMode = 'row'
 const crabModeOf = (v: unknown): CrabMode => (v === 'stage' || v === 'off' ? v : 'row')
 
 const CRAB_GRID_H = 28
-// A row crab is a mini crab drawn for the terminal, 10 × 6 pixels: three rows, as
+// A row crab is a mini crab drawn for the terminal, 8 × 6 pixels: three rows, as
 // tall as an agent's three lines. The full grid halved stands taller than them.
-const MINI_W = 10
+const MINI_W = 8
 const MINI_H = 6
 const ROW_CRAB = { columns: MINI_W, rows: MINI_H / 2 }
 const STAGE_CRAB = { columns: CRAB_BOX, rows: CRAB_GRID_H / 2 }
@@ -665,8 +668,8 @@ const walk =
     cls === 'la' ? -k : cls === 'lb' ? k - 1 : 0
 
 // The mini crab: the top row is left for a hat; the legs shuffle between two stances.
-const MINI_BODY = ['..........', '.cccccccc.', '.ckcccckc.', 'cccccccccc', '.cccccccc.']
-const MINI_LEGS = ['.c.c..c.c.', '..c.cc.c..']
+const MINI_BODY = ['........', '.cccccc.', '.ckcckc.', 'cccccccc', '.cccccc.']
+const MINI_LEGS = ['.c.cc.c.', 'c.c..c.c']
 const miniCrab = (f: Fill, frame: number): void => {
   stamp(f, 0, 0, MINI_BODY, { c: CLAY, k: INK })
   stamp(f, 0, MINI_BODY.length, [MINI_LEGS[frame % 2] ?? ''], { c: CLAY })
@@ -838,7 +841,7 @@ async function togglePane($: EngineInterface): Promise<boolean> {
   }
   const at = await $.clock.now()
   await update($, now, () => at)
-  await $.ui.open({ id: PANE, title: tr().pane })
+  await $.ui.open({ id: PANE, title: tr().pane, columns: DOCK_COLUMNS })
   return true
 }
 
@@ -846,7 +849,7 @@ async function autoOpen($: EngineInterface, key: string): Promise<void> {
   const p = await read($, panel)
   if (p.autoOpenedFor === key) return
   await update($, panel, prev => ({ ...prev, autoOpenedFor: key }))
-  void $.ui.open({ id: PANE, title: tr().pane })
+  void $.ui.open({ id: PANE, title: tr().pane, columns: DOCK_COLUMNS })
 }
 
 export const register: Register = (on, options) => {
@@ -941,7 +944,7 @@ export const register: Register = (on, options) => {
     if ((e.args ?? '').trim() === 'open') {
       const at = await $.clock.now()
       await update($, now, () => at)
-      await $.ui.open({ id: PANE, title: tr().pane })
+      await $.ui.open({ id: PANE, title: tr().pane, columns: DOCK_COLUMNS })
       return { text: tr().opened }
     }
     const isOpen = await togglePane($)

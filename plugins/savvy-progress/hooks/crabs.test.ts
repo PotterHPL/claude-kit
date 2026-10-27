@@ -17,12 +17,12 @@ const worker = async ($: Engine, on: On) => {
 const mount = ($: Engine, surface: 'terminal' | 'desktop', columns: number) =>
   $.ui.mount({ plugin: PLUGIN, surface, component: 'Pane', requestId: 'savvy-agents', props: pane(columns) })
 
-test('terminal, row: each agent has a 10 × 3 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
+test('terminal, row: each agent has a 8 × 3 mini crab beside its lines', { options: { terminalCrabs: 'row' } }, async ($, on) => {
   await worker($, on)
   const ui = await mount($, 'terminal', 60)
   const crab = await ui.find({ type: 'Raster', key: 'crab-a1' })
   expect(crab).toBeDefined()
-  expect(crab?.props).toMatchObject({ columns: 10, rows: 3 })
+  expect(crab?.props).toMatchObject({ columns: 8, rows: 3 })
   expect(await ui.find({ type: 'Text', text: /Walking work/ })).toBeDefined()
 })
 
