@@ -9,7 +9,12 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 ## Relevo
 - **Avance:** 0 de 2 rebanadas aceptadas (0 %).
 - **Plan aprobado por JD (2026-11-18, `ti-plan`):** 2 rebanadas, solo la barra (D1 de JD: «construirla ya»; el panel
-  de todos los proyectos queda fuera). Siguiente: rebanada 1.
+  de todos los proyectos queda fuera).
+- **R1 en revisión (2026-11-18):** plugin `plugins/avance-rebanadas` (lector `hooks/plan.ts`, banda y `/avance` en
+  `hooks/register.tsx`), en el marketplace y en el README. `claude plugin validate` limpio; `claude plugin test` →
+  15 pasan, 0 fallan. Instalado en el PC de JD (`avance-rebanadas@claude-kit-conaltura`, alcance de usuario). Falta
+  que JD lo vea en su terminal: lo nuevo del motor en Windows (forma de `$.session.cwd`, rutas de `$.fs.read`) solo
+  se comprueba ahí. Siguiente: JD acepta R1 → rebanada 2.
 - **Decisiones activas:**
   - **D1 (JD, 2026-11-18):** construir ya la barra de un proyecto; sin panel multiproyecto.
   - El dato sale de la tabla `## Rebanadas` de `docs/plan.md` del proyecto (columna **Estado**), que `ti-plan` ya
@@ -35,7 +40,7 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
-| R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | en curso |
+| R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | en revisión |
 | R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | pendiente |
 
 **Archivos compartidos y su dueño:**

@@ -1,0 +1,12 @@
+{
+  "name": "avance-rebanadas",
+  "version": "0.1.0",
+  "description": "Barra encima del prompt con el avance del proyecto: un segmento por rebanada de docs/plan.md, coloreado por estado, y las aceptadas sobre el total (ciclo v3 de TI Conaltura).",
+  "author": {
+    "name": "PotterHPL (TI Conaltura)",
+    "url": "https://github.com/PotterHPL"
+  },
+  "types": "./types/index.d.ts",
+  "repository": "https://github.com/PotterHPL/claude-kit",
+  "license": "MIT"
+}

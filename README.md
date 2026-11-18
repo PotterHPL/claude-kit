@@ -7,10 +7,14 @@
 > /plugin marketplace add PotterHPL/claude-kit
 > /plugin install savvy-progress@claude-kit-conaltura
 > /plugin install next-steps@claude-kit-conaltura
+> /plugin install avance-rebanadas@claude-kit-conaltura
 > ```
 >
 > Para el panel en español: `/plugin configure savvy-progress@claude-kit-conaltura` → `language` = `es` (o el ajuste
 > `language` de Claude Code en español). La rama `conaltura` es la principal; `main` sigue al autor.
+>
+> `avance-rebanadas` (propio de TI) pone encima del prompt la barra de avance del proyecto: las rebanadas aceptadas
+> de su `docs/plan.md` sobre el total. Ver [su README](plugins/avance-rebanadas/README.md).
 
 
 My public skills and mods for [Claude Code](https://claude.com/claude-code), in one place. Every item is a standalone plugin under `plugins/`: install only what you need.
@@ -20,6 +24,7 @@ My public skills and mods for [Claude Code](https://claude.com/claude-code), in 
 | [savvy-flow](plugins/savvy-flow) | skill + agents | `/savvy-flow <task>`: the session model plans, delegates to tiered worker subagents and reviews their work. |
 | [savvy-progress](plugins/savvy-progress) | mod | A progress bar above the prompt and a live agents panel. Made for savvy-flow, shows any subagents. |
 | [session-band](plugins/session-band) | mod | A band above the prompt: turn, speed, cost, prompt cache countdown and context; notifies before the cache expires. |
+| [avance-rebanadas](plugins/avance-rebanadas) | mod | (TI Conaltura) A band above the prompt with the project's progress: one segment per slice of `docs/plan.md`, coloured by state. |
 
 savvy-flow and savvy-progress work on their own and light up together: with both installed, the flow drives the bar and workers report their progress to the panel.
 
