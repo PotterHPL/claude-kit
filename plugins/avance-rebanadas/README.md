@@ -7,13 +7,13 @@ mcp-proyectos-dwh  ■■■■■□  5/6 aceptadas (83 %)                     
 Siguiente: R6 · La guía para Financiera y Gerencia y el .mcpb 1.0.0 instalado…
 ```
 
-- Un segmento por rebanada: verde = `aceptada`, ámbar = `en revisión`, azul = `en curso`, gris (□) = `pendiente`.
+- Un segmento por rebanada: morado = `aceptada`, magenta = `en revisión`, cyan = `en curso`, gris (□) = `pendiente` (paleta Netrun, la del Neovim).
 - La cuenta es de rebanadas **aceptadas** sobre el total (ciclo v3, ADR-0033 D5).
 - Se lee de la tabla `## Rebanadas` de `docs/plan.md` (la que deja `ti-plan`), por su columna **Estado**. Si hay varias
   secciones `## Rebanadas`, cuenta la última. Un plan por fases, sin esa tabla, no muestra barra.
 - Vuelve a leer el plan cada 3 segundos: al marcar una rebanada como aceptada, la barra cambia sola y sale el aviso
   «✔ R6 aceptada · 6/6 (100 %)».
-- Con todas aceptadas, la barra entera pasa a dorado y dice «lista para entregar».
+- Con todas aceptadas, la barra entera pasa a amarillo neón y dice «lista para entregar».
 
 ## De qué proyecto
 

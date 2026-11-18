@@ -40,7 +40,7 @@
       "name": "avance-rebanadas",
       "source": "./plugins/avance-rebanadas",
       "description": "Mod: band above the prompt with the project's progress, one segment per slice of docs/plan.md coloured by state, accepted over total (TI Conaltura's cycle v3).",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "category": "mod"
     }
   ]
