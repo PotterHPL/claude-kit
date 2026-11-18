@@ -35,6 +35,13 @@
       "description": "Mod: after each turn of the main thread, suggests up to three next prompts above the input (from anthropics/claude-plugins-community, commit 06ec7b6, MIT; skips subagents' turns).",
       "version": "1.0.0-conaltura.1",
       "category": "mod"
+    },
+    {
+      "name": "avance-rebanadas",
+      "source": "./plugins/avance-rebanadas",
+      "description": "Mod: band above the prompt with the project's progress, one segment per slice of docs/plan.md coloured by state, accepted over total (TI Conaltura's cycle v3).",
+      "version": "0.1.0",
+      "category": "mod"
     }
   ]
 }

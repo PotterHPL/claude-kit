@@ -1,160 +1,140 @@
-# Plan: mascotas de Savvy Progress en la terminal, con el equipo de obra
+# Plan: barra de avance por rebanadas aceptadas
 
-Fork de `johnnyvizz/claude-kit` (MIT) para Conaltura. Ficha: `50-conocimiento/proyectos/savvy-progress-conaltura.md`
-en el repo TI. Regla de mods: ADR-0026. Este archivo vive solo en la rama `conaltura`; las ramas que van al autor
-salen de su `main` y no lo llevan.
-
-## Contexto
-- Savvy Progress dibuja los cangrejos (pixel art 24×18 en una rejilla de 30×28, un disfraz por nivel) solo como SVG
-  en el escritorio (`hooks/register.tsx:1065`, `:1233`). En la terminal el panel es texto.
-- La terminal tiene `Raster` (celdas con carácter, color de frente y de fondo; 1024 pares de color a la vez) y
-  `$.ui.blit` para repintar sin redibujar (hasta 120 por segundo). `Image` solo sirve en kitty, Ghostty e iTerm2:
-  no en Windows Terminal.
-- Los disfraces se definen con `Fill(x, y, w, h, color, clase)`, así que la misma definición puede pintar SVG o una
-  rejilla de pixeles.
-- Base: `claude plugin test plugins/savvy-progress` → 24 pasan, 0 fallan (2026-10-26, commit `c871c15`).
-
-## Decisiones (JD, 2026-10-26)
-- **D1** · Fork propio + PR al autor.
-- **D2** · Disfraces «Obra + extras»: explorador = topógrafo, ejecutor = obrero, revisor = interventor,
-  consejero = arquitecto con planos, Plan = arquitecto con escuadra, claude-code-guide = guía con banderín,
-  general-purpose = maestro de obra. Los 6 del autor se quedan.
-- **D3** · Disfraz por tarea primero (tipo de agente) y por modelo/esfuerzo de respaldo.
-- **D4** · Al autor: PR 1 mascotas en terminal; PR 2 disfraz por esfuerzo + opción de mapa. Los trajes de obra quedan
-  en el fork.
-- Savvy Flow no se instala (ADR-0026).
-
-## Fases
-
-### F1 · Bala trazadora: un cangrejo en la terminal
-- **Objetivo:** en `/agents-info`, dentro de la terminal de JD (herdr sobre Windows Terminal), cada agente lleva un
-  cangrejo `other` en pixel art que camina mientras el agente trabaja y se queda quieto al terminar. JD elige el
-  tamaño: **A** uno por fila (sprite a media resolución, 15×7 celdas) o **B** un escenario arriba del panel con los
-  cangrejos de los agentes en curso a 30×14 y un punto de color en cada fila.
-- **Archivos:** modifica `plugins/savvy-progress/hooks/register.tsx` (rama de la terminal del panel); crea
-  `hooks/raster.ts` (rejilla de pixeles → celdas ▀) si el motor acepta imports relativos, si no va dentro de
-  `register.tsx`; crea `hooks/raster.test.ts`. No toca el dibujo SVG del escritorio. Fuera del fork: `.gitignore`,
-  `AGENTS.md` y ficha en el repo TI; instalación desde el marketplace local `claude-kit-conaltura`.
-- **Contratos:** `rasterize(draw, opts) → { columns, rows, cells }` (cells en base64, tripletas u32
-  `[codePoint, fg, bg]`, `0x01000000` = color por defecto para lo transparente); `Raster key="crab-<id>"`;
-  `$.clock.every(250, …)` solo mientras haya agentes en curso y el panel esté puesto; si `$.ui.blit` responde
-  `{ deny }`, el temporizador se detiene sin error.
-- **Pruebas:** `raster.test.ts` (una celda, transparencia arriba/abajo, par ▀ con dos colores, tamaño fuera de rango,
-  base64 que el motor decodifica). Terminado = `claude plugin test plugins/savvy-progress` → 24 + nuevas, 0 fallan;
-  `tsc -p plugins/savvy-progress` sin errores; `claude plugin validate plugins/savvy-progress` limpio; JD lo ve en su
-  terminal.
-- **Riesgos:** herdr no pasa el color verdadero (se detecta lo primero, con un Raster de 1 celda); al reducir a la mitad
-  se pierden accesorios de 1 pixel (por eso JD elige A o B); el motor no acepta imports relativos (todo en
-  `register.tsx`, como lo tiene el autor).
-- **Rama y PR:** `feat/terminal-crabs-f1`, desde `upstream/main` → PR a `conaltura` en el fork.
-- **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal. Nada delicado (sin red, procesos ni secretos).
-
-### F2 · Los 6 disfraces del autor en la terminal
-- **Objetivo:** astronauta, detective, ingeniero, chef, piloto y pirata se ven en la terminal con el movimiento de su
-  accesorio; modo compacto con mini cangrejos; tareas planeadas atenuadas; espejo en hebreo.
-- **Archivos:** modifica `hooks/register.tsx` (o `raster.ts`); crea `hooks/frames.ts` y `hooks/frames.test.ts`.
-- **Contratos:** `frame(costume, n, { mirror, dim }) → pixeles` con 4 cuadros por segundo: patas alternan, el cuerpo
-  sube y baja, y cada accesorio pasa las animaciones CSS a desplazamientos o parpadeos (las rotaciones se aproximan
-  con cuadros alternos). Atenuado = mezclar con el fondo por defecto al 45 %.
-- **Pruebas:** `frames.test.ts` (los cuadros de cada disfraz son fijos y distintos entre sí; el espejo invierte las
-  columnas; atenuado). Terminado = `claude plugin test` en verde, `tsc` y `validate` limpios.
-- **Riesgos:** las rotaciones (llave, sartén, tortilla) no se leen a media resolución → cuadros dibujados a mano para
-  esos accesorios.
-- **Rama y PR:** `feat/terminal-crabs-f2`, desde `feat/terminal-crabs-f1` → PR a `conaltura`. Después, **PR 1 al
-  autor** desde `upstream/terminal-crabs` (F1 + F2 sobre `upstream/main`); JD lee el texto antes de abrirlo.
-- **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal.
-
-### F3 · Disfraz por tarea y por esfuerzo, y panel en español
-- **Objetivo:** todo agente lleva un disfraz: primero por su tipo (opción `costumes`, por ejemplo
-  `explorador=explore,revisor=heavy`), después por nivel `savvy-*`, `Explore` = pirata y, si no, por modelo y esfuerzo
-  (Fable = astronauta, Opus xhigh = detective, high = ingeniero, medium = chef, low = piloto). El panel queda en
-  español (`language: es`).
-- **Archivos:** modifica `hooks/register.tsx` (`costumeOf`, `STRINGS`, opciones), `.claude-plugin/plugin.json`
-  (`userConfig.costumes`, `language` con `es`), `README.md`; crea `hooks/costume.test.ts`.
-- **Contratos:** `costumeOf(type, model, effort, map) → costume`; `userConfig.costumes`: texto `tipo=disfraz`
-  separado por comas; un disfraz desconocido cae al siguiente criterio.
-- **Pruebas:** `costume.test.ts` (tabla de tipos y de modelo/esfuerzo, mapa con errores, prefijo de plugin
-  `x:savvy-careful`); prueba de textos en español. Terminado = `claude plugin test` en verde.
-- **Riesgos:** el esfuerzo de un agente no siempre llega en el evento (`a.effort` vacío) → cae al modelo solo.
-- **Rama y PR:** `feat/costume-map-f3` → PR a `conaltura`. Después, **PR 2 al autor**; JD lee el texto antes.
-- **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal.
-
-### F4 · Maqueta del equipo de obra
-- **Objetivo:** JD ve los 7 trajes de obra lado a lado, en escritorio (SVG) y en terminal (simulación de celdas ▀), y
-  los aprueba o ajusta.
-- **Archivos:** Artifact (HTML en el scratchpad); no toca el fork.
-- **Contratos:** cada traje en la rejilla de 30×28 con `Fill`, clases de accesorio para su movimiento; colores de
-  `conaltura-web-design`.
-- **Pruebas:** puerta de JD sobre la maqueta (cada fase republica en la misma URL).
-- **Riesgos:** a media resolución los trajes se confunden → se valida en la vista de terminal de la maqueta.
-- **Rama y PR:** sin rama (solo Artifact). Puede ir en paralelo a F2 o F3.
-- **Quién:** Claude.
-- **Revisión:** puerta de diseño con JD.
-
-### F5 · Trajes de obra en el fork y cierre
-- **Objetivo:** el equipo de obra trabaja en el panel (escritorio y terminal) y el mapa por defecto del fork lo asigna
-  a nuestros agentes; documentación cerrada.
-- **Archivos:** modifica `hooks/register.tsx` (`COSTUMES`, `CRAB_CSS`, frames de terminal) y `plugin.json` (valor por
-  defecto de `costumes` en el fork, versión `1.x.y-conaltura.1`); crea `hooks/costumes-obra.test.ts`. En TI:
-  `references/mods.md` de `ti-guardarrailes`, nota en el ADR-0026, ficha a `produccion`, `_meta/log.md`.
-- **Contratos:** disfraces `obra-topografo`, `obra-obrero`, `obra-interventor`, `obra-arquitecto`, `obra-plan`,
-  `obra-guia`, `obra-maestro`.
-- **Pruebas:** `costumes-obra.test.ts` (cada traje cabe en la rejilla, tiene cuadros de terminal y el mapa por
-  defecto cubre los 7 tipos). Terminado = `claude plugin test` en verde y JD los ve en su terminal.
-- **Riesgos:** conflicto al traer cambios del autor → los trajes viven en un bloque propio del archivo.
-- **Rama y PR:** `feat/obra-f5` → PR a `conaltura`.
-- **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal.
-
-**Dependencias:** F1 → F2 → F3 → F5 (mismo archivo). F4 puede adelantarse en paralelo.
-
-## Plan de pruebas
-| Prueba | Fase | Comando |
-|---|---|---|
-| 24 pruebas del autor (base) | todas | `claude plugin test plugins/savvy-progress` |
-| `raster.test.ts` | F1 | idem |
-| `frames.test.ts` | F2 | idem |
-| `costume.test.ts` | F3 | idem |
-| `costumes-obra.test.ts` | F5 | idem |
-| Tipos | todas | `tsc -p plugins/savvy-progress` |
-| Validación del mod | todas | `claude plugin validate plugins/savvy-progress` |
-| Secretos | cada PR | `gitleaks detect` a mano (el fork no lleva pre-commit para no mandarlo al autor) |
-| Visual | F1, F2, F5 | JD abre `/agents-info` en su terminal con un agente en curso |
-
-## Supuestos
-- El fork `PotterHPL/claude-kit` es público (viene de un repo público).
-- `conaltura` es la rama principal del fork; `main` sigue al autor.
-- El repo vive en `40-ia/mods/claude-kit`, excluido del repo TI como `mcps-personales`.
+Mod nuevo `avance-rebanadas` en el fork `PotterHPL/claude-kit` (rama `conaltura`, marketplace `claude-kit-conaltura`).
+Origen: IDEA #1 del borrador de JD (`Desktop/Ideas/Metodologia IA.md:120`, «un mod de Claude que sea una barra que me
+diga en tiempo real el porcentaje en el que va») y D5 del ADR-0033 (el avance se mide en rebanadas aceptadas). Regla
+de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marketplace). El plan anterior de este repo
+(mascotas de Savvy Progress) está en `docs/plan-savvy-progress.md`.
 
 ## Relevo
-- **2026-10-27 · F1 cerrada** (PR #1 fusionado). Decisiones de JD en las iteraciones visuales:
-  - `row` (cangrejo por fila) en vez de `stage`; cangrejo pequeño de 9 × 6 pixeles (3 filas), dibujado a mano para la
-    terminal (la media resolución del sprite quedaba grande y pesada). Patas de 2 pixeles que se acortan por turnos.
-  - Fila calcada del escritorio: título numerado y tiempo; nivel en su color (para agentes que no son de Savvy, su
-    tipo en el color del nivel que corresponde a su modelo y esfuerzo) y modelo atenuado; pasos `n/total · nota` y
-    cifras; barra `▃` de lado a lado en el color del nivel. Dos líneas entre agentes y una bajo cada encabezado.
-  - `reportSteps: any`: todo subagente reporta sus pasos (instalación de JD). Panel acoplado a 56 columnas.
-  - Validación visual con un simulador de la cuadrícula de la terminal (scratchpad) antes de cada iteración.
-- **Para F2:** barra también en los terminados (llena, en su color), como el escritorio; cangrejo atenuado con disfraz
-  en «Planned»; disfraces a la escala del cangrejo pequeño (los sombreros necesitan filas encima: decidir con JD si
-  la fila crece a 4).
-- **Idea anotada (sin fase):** que la sesión principal reporte su plan con `progress` al delegar varias tareas, para ver
-  «Planned» sin Savvy Flow.
-- **2026-10-27 · F2 cerrada** (PR #2): los 6 disfraces redibujados a 9 × 8 (4 filas, sombrero en las 2 de arriba),
-  accesorio animado en dos cuadros, astronauta que flota; «Planeados» con cangrejo atenuado; barra en los terminados.
-- **2026-10-27 · F3 cerrada** (PR #3): disfraz y color por la opción `costumes`, si no nivel de Savvy, si no
-  `Explore` = pirata, si no modelo y esfuerzo; panel en español (`language: es`, en la instalación de JD).
-- **PR al autor abiertos:** johnnyvizz/claude-kit#47 (cangrejos y filas en la terminal) y #48 (disfraz para todo
-  agente y español; depende del #47). Ramas `upstream/terminal-crabs` y `upstream/costume-map`, un commit cada una.
-  Si el autor pide cambios, se atienden en esas ramas y se traen a `conaltura`.
-- **2026-10-27 · F4 cerrada:** maqueta «Cuadrilla de obra» (Artifact, 5 versiones). JD exploró un camino B (línea
-  Savvy), rediseños y personajes desde cero, y se quedó con el camino A original: topógrafo, obrero, interventor,
-  arquitecto, proyectista, guía y maestro de obra (con bigote). Animaciones aprobadas: ciclo de trabajo de 4 cuadros,
-  parpadeo cada 3 s, cangrejo encogido con gota de sudor si falla; sin festejo al terminar (queda quieto).
-- **2026-10-27 · F5 cerrada** (PR #4): la cuadrilla en el fork (`obra-*`), mapeada por defecto con `costumes`;
-  escritorio = el traje de terminal a 3×. Versión `1.2.1-conaltura.1`. JD la vio trabajando con los 7 tipos de agente.
-- **Proyecto cerrado.** Pendiente fuera de fase: atender los comentarios del autor en johnnyvizz/claude-kit#47 y #48 si
-  llegan; un dibujo propio a 30 × 28 para el escritorio, si algún día se usa más que la terminal.
+- **Avance:** 0 de 2 rebanadas aceptadas (0 %).
+- **Plan aprobado por JD (2026-11-18, `ti-plan`):** 2 rebanadas, solo la barra (D1 de JD: «construirla ya»; el panel
+  de todos los proyectos queda fuera).
+- **R1 en revisión (2026-11-18):** plugin `plugins/avance-rebanadas` (lector `hooks/plan.ts`, banda y `/avance` en
+  `hooks/register.tsx`), en el marketplace y en el README. `claude plugin validate` limpio; `claude plugin test` →
+  15 pasan, 0 fallan. Instalado en el PC de JD (`avance-rebanadas@claude-kit-conaltura`, alcance de usuario). Falta
+  que JD lo vea en su terminal: lo nuevo del motor en Windows (forma de `$.session.cwd`, rutas de `$.fs.read`) solo
+  se comprueba ahí. Siguiente: JD acepta R1 → rebanada 2.
+- **Decisiones activas:**
+  - **D1 (JD, 2026-11-18):** construir ya la barra de un proyecto; sin panel multiproyecto.
+  - El dato sale de la tabla `## Rebanadas` de `docs/plan.md` del proyecto (columna **Estado**), que `ti-plan` ya
+    exige. Los proyectos por fases (Alertador, ConEmpeño) no muestran barra.
+  - `/avance <slug>` encuentra el proyecto por `ruta_local` de su ficha (`50-conocimiento/proyectos/<slug>.md`).
+  - Se lee el archivo en disco, en la rama en que esté el repo.
+
+## Contexto
+- `plugins/session-band` ya dibuja una banda encima del prompt (`ui.render` sobre `AbovePrompt`) con `atom`,
+  `$.clock.every`, `$.fs.read`, `$.session.cwd` y `$.command.register`: es el molde. `savvy-progress` también usa
+  `AbovePrompt` (solo mientras trabajan agentes) y observa herramientas con `on('tool.call', …)`; ambas bandas se
+  encadenan con `next(e)`.
+- Instalados hoy en el PC de JD: `savvy-progress` y `next-steps` desde `claude-kit-conaltura` (marketplace local que
+  apunta a `40-ia/mods/claude-kit`). `session-band` no está activo.
+- Formatos reales de la tabla:
+  - `mcp-proyectos-dwh`: `## Rebanadas (plan aprobado por JD el 2026-11-13, \`ti-plan\`)`, columnas
+    `# · Qué verás · Rama · Quién · Depende de · Estado`, 6 filas (5 `aceptada`, 1 `pendiente`).
+  - `bienvenida-credenciales`: `## Rebanadas (1.0.1: configurar el envío desde la app)`, texto antes de la tabla,
+    columnas `# · Qué verás · Rama · Quién · Estado`, estados `en revisión` y `pendiente`.
+- Estados de `ti-plan`: `pendiente · en curso · en revisión · aceptada`.
+
+## Rebanadas (plan aprobado por JD el 2026-11-18, `ti-plan`)
+
+| # | Qué verás | Rama | Quién | Depende de | Estado |
+|---|---|---|---|---|---|
+| R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | en revisión |
+| R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | pendiente |
+
+**Archivos compartidos y su dueño:**
+- `.claude-plugin/marketplace.json` y `README.md` de la raíz → R1. R2 solo sube la versión.
+- `plugins/avance-rebanadas/hooks/register.tsx` → R1. R2 agrega la detección y el aviso.
+- `plugins/avance-rebanadas/hooks/plan.ts` (lectura del plan) → R1. R2 no lo cambia.
+- En TI: ficha `avance-rebanadas` → R1; `estandar-desarrollo-ia.md` §10 y `ti-guardarrailes/references/mods.md` → R2.
+
+### R1 — La barra del proyecto abierto
+- **Qué verás:** abre Claude Code en `10-proyectos/mcps/mcp-proyectos-dwh`, o escribe `/avance mcp-proyectos-dwh` desde
+  `C:\Users\jossa\TI`. Encima del prompt: `mcp-proyectos-dwh ■■■■■□ 5/6 aceptadas (83 %) · Siguiente: R6 · La guía…`.
+  Verde = aceptada, ámbar = en revisión, azul = en curso, gris = pendiente. Cambias un estado en `docs/plan.md` y la
+  barra cambia en 3 s o menos, sin reiniciar. `/avance` solo muestra u oculta la barra. En un proyecto sin
+  `## Rebanadas` no sale nada.
+- **Qué falta:** desde `TI` hay que escribir `/avance <slug>`; no avisa al aceptar; al 100 % no cambia de color.
+- **Archivos:**
+  - Crea `plugins/avance-rebanadas/.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx`,
+    `hooks/plan.ts`, `hooks/plan.test.ts`, `hooks/register.test.tsx`, `README.md` y `types/index.d.ts` si hace falta.
+  - Modifica `.claude-plugin/marketplace.json` (entrada nueva) y `README.md` de la raíz (lista de mods).
+  - No toca `savvy-progress`, `next-steps`, `session-band` ni `savvy-flow`.
+  - En TI: ficha nueva `50-conocimiento/proyectos/avance-rebanadas.md` (con § Plan), línea en `_meta/index.md` y
+    entrada en `_meta/log.md`.
+- **Contratos:**
+  - `leerAvance(texto: string) → { rebanadas: { id, queVeras, estado }[], aceptadas, total } | null`: toma la última
+    sección cuyo título empieza por `## Rebanadas`, la primera tabla después del título, la columna `#` como id, la
+    columna `Qué verás` y la columna `Estado` (por nombre, sin importar mayúsculas ni tildes). Sin sección, sin tabla
+    o sin columna `Estado` → `null`. Un estado que no sea de los cuatro cuenta como `pendiente`.
+  - `buscarPlan(cwd) → ruta | null`: sube desde `cwd` hasta encontrar `docs/plan.md`; acepta `\` y `/`.
+  - `/avance <slug>` → raíz de TI (sube desde `cwd` hasta `AGENTS.md` + `50-conocimiento/`) → lee `ruta_local:` de
+    `50-conocimiento/proyectos/<slug>.md` → `<raíz>/<ruta_local>/docs/plan.md`. Slug sin ficha o sin plan → mensaje
+    claro en el resultado del comando.
+  - Atom `{ plugin: 'avance-rebanadas', key: 'proyecto' }` con `{ ruta, slug, avance, oculto }`; `$.clock.every(3000)`
+    vuelve a leer el plan solo si hay proyecto.
+- **Escenarios:** ninguno (no toca dinero, permisos, fechas ni cálculos delicados).
+- **Pruebas:**
+  - `plan.test.ts`: tabla de `mcp-proyectos-dwh` → 5/6 y siguiente R6; tabla de `bienvenida-credenciales` → 0/2 con
+    R1 en revisión; dos secciones `## Rebanadas` → la última; sin sección o sin columna Estado → `null`; `Estado` con
+    tilde o mayúsculas; filas con `|` escapado en el texto.
+  - `register.test.tsx`: en terminal y en escritorio la banda muestra `5/6` y la siguiente; sin plan no hay banda;
+    `/avance <slug>` fija el proyecto; `/avance` oculta y muestra.
+  - **Terminado:** `claude plugin test plugins/avance-rebanadas` → todas pasan, 0 fallan;
+    `claude plugin validate plugins/avance-rebanadas` limpio; `tsc` sin errores; JD ve la barra en su terminal con el
+    MCP y la ve cambiar al editar un estado.
+- **Riesgos:**
+  - La API de mods en Windows (forma de `$.session.cwd`, rutas de `$.fs.read`) no está probada. Lo primero es una
+    banda mínima que muestra la ruta del plan, instalada en el PC de JD.
+  - La instalación desde el marketplace local puede pedir `claude plugin marketplace update`. Se prueba con la banda
+    mínima.
+  - Dos bandas a la vez (`savvy-progress` mientras trabajan agentes): se comprueba que las dos se ven.
+- **Rama y PR:** `feat/avance-rebanadas-r1`, desde `conaltura` → PR a `conaltura` en el fork.
+- **Quién:** Claude.
+- **Revisión:** `ti-revisar` normal y revisión de mod de `ti-guardarrailes` (`references/mods.md`): solo `$.fs.read`,
+  `$.fs.exists`, `$.session.cwd`, `$.clock`, `$.command.register`; sin red ni procesos.
+
+### R2 — Aparece sola y avisa al aceptar
+- **Qué verás:** abre Claude Code en `C:\Users\jossa\TI` sin comando. Al leer o editar un archivo de
+  `10-proyectos/mcps/mcp-proyectos-dwh`, la barra aparece con ese proyecto. Al pasar R6 a `aceptada` sale el aviso
+  «R6 aceptada · 6/6 (100 %)» y la barra completa cambia de color, con «lista para entregar».
+- **Qué falta:** nada del alcance aprobado. Fuera: panel de todos los proyectos y barra por fases.
+- **Archivos:** modifica `plugins/avance-rebanadas/hooks/register.tsx`, `register.test.tsx`, `README.md`,
+  `plugin.json` y `marketplace.json` (versión). En TI: ficha, `estandar-desarrollo-ia.md` §10 (instalación),
+  `40-ia/skills/ti-guardarrailes/references/mods.md` (tabla de mods), fila en ADR-0033 § Cómo se aplica y
+  `_meta/log.md`.
+- **Contratos:**
+  - `on('tool.call')` solo observa (`return next(e)` siempre): toma `file_path`, `path` o `notebook_path` de Read,
+    Edit, Write, Glob y Grep, busca su `docs/plan.md` con `buscarPlan` y, si tiene `## Rebanadas`, lo vuelve el
+    proyecto actual. `/avance <slug>` fijado manda sobre la detección.
+  - Aviso: al releer, toda rebanada que pasó a `aceptada` respecto de la lectura anterior → `$.ui.toast`. La primera
+    lectura no avisa.
+- **Escenarios:** ninguno.
+- **Pruebas:** `register.test.tsx`: un `Read` de un archivo del proyecto fija la barra; un archivo sin plan no la
+  cambia; `/avance` fijado no lo cambia la detección; pasar R6 a aceptada da un aviso y la primera lectura ninguno;
+  100 % muestra «lista para entregar». **Terminado:** `claude plugin test plugins/avance-rebanadas` → 0 fallan; JD
+  lo ve desde `TI`.
+- **Riesgos:** el `tool.call` de un mod puede aprobar herramientas antes que el guardarraíl (ADR-0026). Se mitiga
+  con que solo observa y siempre devuelve `next(e)`; la revisión del mod lo verifica.
+- **Rama y PR:** `feat/avance-rebanadas-r2`, desde `conaltura` con la R1 integrada → PR a `conaltura`.
+- **Quién:** Claude.
+- **Revisión:** `ti-revisar` normal y revisión de mod (agrega `tool.call` en modo observar).
+
+### Matriz requisito → rebanada
+| Requisito | Rebanada |
+|---|---|
+| Barra que se llena con cada rebanada aceptada (IDEA #1, D5 de ADR-0033) | R1 |
+| En tiempo real, sin reiniciar | R1 (lectura cada 3 s) |
+| Funciona trabajando desde la raíz `TI` | R1 con `/avance`, R2 sola |
+| Momento de aceptar visible | R2 (aviso y 100 %) |
+| Mod revisado antes de entrar al marketplace (ADR-0026 D3) | R1 y R2 |
+
+## Plan de pruebas
+- Unitarias: `claude plugin test plugins/avance-rebanadas` (lectura del plan y banda en terminal y escritorio).
+- Validación: `claude plugin validate plugins/avance-rebanadas` y `tsc`.
+- De aceptación, con JD: barra del MCP en su terminal (herdr sobre Windows Terminal), cambio de estado en vivo, y en
+  R2 detección desde `TI` y aviso al aceptar.
+
+## Implementa
+`claude`: es un mod pequeño sobre una API en acceso anticipado; Codex no aporta.
