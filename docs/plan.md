@@ -7,7 +7,8 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 (mascotas de Savvy Progress) está en `docs/plan-savvy-progress.md`.
 
 ## Relevo
-- **Avance:** 1 de 2 rebanadas aceptadas (50 %).
+- **Avance:** 2 de 2 rebanadas aceptadas (100 %). **Proyecto cerrado (2026-11-18):** v0.2.0 en producción en el PC
+  de JD; ficha `avance-rebanadas` en `produccion`.
 - **Plan aprobado por JD (2026-11-18, `ti-plan`):** 2 rebanadas, solo la barra (D1 de JD: «construirla ya»; el panel
   de todos los proyectos queda fuera).
 - **R1 en revisión (2026-11-18):** plugin `plugins/avance-rebanadas` (lector `hooks/plan.ts`, banda y `/avance` en
@@ -22,7 +23,10 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
   rebanada que pasa a aceptada (la primera lectura y el cambio de proyecto no avisan). Al 100 %, dorado y «lista para
   entregar». `claude plugin test` → 23 pasan, 0 fallan; `validate` limpio. Hallazgo: en `claude plugin test` una
   ruta relativa en `tool.call` no llega igual al mod (el motor la resuelve antes); se prueba `rutaAbsoluta` aparte y
-  en la sesión real Read y Edit usan rutas absolutas. Siguiente: JD acepta R2 → cierre (ficha en `produccion`).
+  en la sesión real Read y Edit usan rutas absolutas. 
+- **R2 aceptada por JD (2026-11-18):** vio la barra aparecer sola y el aviso al aceptar. PR #12 (fork) y #75 (wiki)
+  fusionados.
+- **Fuera del alcance, por si se retoma:** panel de todos los proyectos y barra por fases (Alertador, ConEmpeño).
 - **Decisiones activas:**
   - **D1 (JD, 2026-11-18):** construir ya la barra de un proyecto; sin panel multiproyecto.
   - El dato sale de la tabla `## Rebanadas` de `docs/plan.md` del proyecto (columna **Estado**), que `ti-plan` ya
@@ -49,7 +53,7 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
 | R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | aceptada |
-| R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | en revisión |
+| R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | aceptada |
 
 **Archivos compartidos y su dueño:**
 - `.claude-plugin/marketplace.json` y `README.md` de la raíz → R1. R2 solo sube la versión.
