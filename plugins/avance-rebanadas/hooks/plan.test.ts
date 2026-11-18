@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { leerAvance, leerRutaLocal, padre, porcentaje, siguiente, unir } from './plan'
+import { leerAvance, leerRutaLocal, padre, porcentaje, recienAceptadas, rutaAbsoluta, siguiente, unir } from './plan'
 
 // Como el plan de mcp-proyectos-dwh: título con paréntesis y columna «Depende de».
 const SEIS = `# Plan
@@ -91,4 +91,18 @@ test('ruta_local de una ficha, con o sin comillas', () => {
   expect(leerRutaLocal('---\nslug: x\nruta_local: 10-proyectos/mcps/x\n---')).toBe('10-proyectos/mcps/x')
   expect(leerRutaLocal('ruta_local: "40-ia/mods/claude-kit"\r\n')).toBe('40-ia/mods/claude-kit')
   expect(leerRutaLocal('slug: x')).toBe(null)
+})
+
+test('una ruta relativa se toma desde la carpeta de la sesión', () => {
+  expect(rutaAbsoluta('C:/TI', '10-proyectos/ti/otro')).toBe('C:/TI/10-proyectos/ti/otro')
+  expect(rutaAbsoluta('C:/TI', 'D:\\x\\y.md')).toBe('D:/x/y.md')
+  expect(rutaAbsoluta('/repo', '/otro/a.md')).toBe('/otro/a.md')
+})
+
+test('recién aceptadas: solo las que cambiaron, y nada sin lectura anterior', () => {
+  const antes = leerAvance(DOS)
+  const despues = leerAvance(DOS.replace('en revisión', 'aceptada'))
+  expect(recienAceptadas(antes, despues).map(r => r.id)).toEqual(['R1'])
+  expect(recienAceptadas(null, despues)).toEqual([])
+  expect(recienAceptadas(despues, despues)).toEqual([])
 })

@@ -80,7 +80,18 @@ export const leerAvance = (texto: string): Avance | null => {
 export const siguiente = (avance: Avance): Rebanada | null =>
   avance.rebanadas.find(r => r.estado !== 'aceptada') ?? null
 
-export const porcentaje = (avance: Avance): number => Math.round((avance.aceptadas / avance.total) * 100)
+// Las rebanadas que pasaron a `aceptada` entre dos lecturas del mismo plan. Sin lectura anterior: ninguna.
+export const recienAceptadas = (antes: Avance | null, despues: Avance | null): Rebanada[] => {
+  if (antes === null || despues === null) return []
+  const previas = new Map(antes.rebanadas.map(r => [r.id, r.estado]))
+  return despues.rebanadas.filter(r => r.estado === 'aceptada' && previas.has(r.id) && previas.get(r.id) !== 'aceptada')
+}
+
+// La ruta de un archivo que tocó una herramienta: absoluta, con `/`.
+export const rutaAbsoluta = (cwd: string, ruta: string): string =>
+  /^([A-Za-z]:)?[\\/]/.test(ruta) ? unir(ruta) : unir(cwd, ruta)
+
+export const porcentaje =(avance: Avance): number => Math.round((avance.aceptadas / avance.total) * 100)
 
 // Rutas: siempre con `/`, sin `/` final (C:\Users\x → C:/Users/x).
 export const unir = (...partes: string[]): string =>

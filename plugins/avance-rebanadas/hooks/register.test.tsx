@@ -37,8 +37,14 @@ async function sesion($: Engine, on: On, cwd: string, archivos = disco()) {
   on('session.cwd', () => ({ value: cwd }))
   on('command.register', () => ({ value: { command: 'avance' } }) as never)
   on('session.start', (_, e) => ({ cwd: e.cwd }) as never)
+  on('tool.call', () => ({ result: {} }) as never)
+  const avisos: string[] = []
+  on('ui.toast', (_, e) => {
+    avisos.push(e.text)
+    return { value: undefined } as never
+  })
   await $.session.start({ source: 'startup', cwd, surface: 'terminal', isInteractive: true } as never)
-  return { reloj, archivos }
+  return { reloj, archivos, avisos }
 }
 
 async function textos($: Engine, surface: 'terminal' | 'desktop') {
@@ -103,4 +109,57 @@ test('al cambiar un estado en el plan la barra cambia en la siguiente relectura'
   archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada']))
   await reloj.advance(3000)
   expect(await textos($, 'terminal')).toContain('6/6 aceptadas (100 %)')
+})
+
+const leer = ($: Engine, file_path: string) => $.tool.call({ tool: 'Read', file_path } as never)
+
+test('desde la raíz de TI, leer un archivo del proyecto pone su barra', async ($, on) => {
+  await sesion($, on, 'C:\\TI')
+  expect(await textos($, 'terminal')).toEqual([])
+  await leer($, 'C:\\TI\\10-proyectos\\mcps\\mcp-x\\src\\servidor.py')
+  const t = await textos($, 'terminal')
+  expect(t).toContain('mcp-x')
+  expect(t).toContain('5/6 aceptadas (83 %)')
+})
+
+test('un archivo sin plan con rebanadas no cambia la barra', async ($, on) => {
+  await sesion($, on, 'C:/TI/10-proyectos/mcps/mcp-x')
+  await leer($, 'C:/TI/50-conocimiento/proyectos/mcp-x.md')
+  await leer($, 'C:/TI/10-proyectos/ti/viejo/README.md')
+  expect(await textos($, 'terminal')).toContain('mcp-x')
+})
+
+test('con /avance fijado, la detección no cambia el proyecto', async ($, on) => {
+  await sesion($, on, 'C:/TI')
+  await avance($, 'mcp-x')
+  await leer($, 'C:/TI/10-proyectos/ti/otro/docs/plan.md')
+  const t = await textos($, 'terminal')
+  expect(t).toContain('mcp-x')
+  expect(t).not.toContain('otro')
+})
+
+test('al aceptar una rebanada sale un aviso; la primera lectura no avisa', async ($, on) => {
+  const { reloj, archivos, avisos } = await sesion($, on, 'C:/TI/10-proyectos/mcps/mcp-x')
+  expect(avisos).toEqual([])
+  archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada']))
+  await reloj.advance(3000)
+  expect(avisos).toEqual(['✔ R6 aceptada · 6/6 (100 %)'])
+  await reloj.advance(3000)
+  expect(avisos.length).toBe(1)
+})
+
+test('cambiar de proyecto no avisa las rebanadas que ya estaban aceptadas', async ($, on) => {
+  const { avisos } = await sesion($, on, 'C:/TI/10-proyectos/ti/otro')
+  await leer($, 'C:/TI/10-proyectos/mcps/mcp-x/README.md')
+  expect(await textos($, 'terminal')).toContain('mcp-x')
+  expect(avisos).toEqual([])
+})
+
+test('al 100 % dice «lista para entregar»', async ($, on) => {
+  const archivos = disco()
+  archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada']))
+  await sesion($, on, 'C:/TI/10-proyectos/mcps/mcp-x', archivos)
+  const t = await textos($, 'terminal')
+  expect(t).toContain('2/2 aceptadas (100 %)')
+  expect(t).toContain('Todas las rebanadas aceptadas · lista para entregar')
 })

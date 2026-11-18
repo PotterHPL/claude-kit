@@ -8,9 +8,16 @@ import {
   nombre,
   padre,
   porcentaje,
+  recienAceptadas,
+  rutaAbsoluta,
   siguiente,
   unir,
 } from './plan'
+
+// Herramientas cuyo archivo dice en qué proyecto se está trabajando.
+const HERRAMIENTAS_CON_RUTA = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'NotebookEdit']
+// Al 100 %: la barra completa cambia a este color.
+const COMPLETA = '#d4a72c'
 
 // Cada cuánto se vuelve a leer el plan: lo bastante seguido para verlo «en vivo».
 const RELECTURA_MS = 3000
@@ -63,9 +70,38 @@ const releer = async ($: EngineInterface) => {
   if (p === null) return
   const texto = await $.fs.read(p.plan).catch(() => null)
   const nuevo = typeof texto === 'string' ? leerAvance(texto) : null
-  if (JSON.stringify(nuevo) !== JSON.stringify(await read($, avance))) {
-    await update($, avance, () => nuevo)
+  const antes = await read($, avance)
+  if (JSON.stringify(nuevo) === JSON.stringify(antes)) return
+  await update($, avance, () => nuevo)
+
+  // El momento de aceptar: un aviso por cada rebanada que pasó a aceptada.
+  if (nuevo === null) return
+  for (const r of recienAceptadas(antes, nuevo)) {
+    $.ui.toast(`✔ ${r.id} aceptada · ${nuevo.aceptadas}/${nuevo.total} (${porcentaje(nuevo)} %)`, { timeoutMs: 8000 })
   }
+}
+
+// Carpetas ya revisadas en esta sesión: no se vuelve a subir por el mismo camino en cada llamada.
+const revisadas = new Map<string, string | null>()
+
+// Un archivo que tocó una herramienta: si es de un proyecto con rebanadas, la barra pasa a ese proyecto.
+// `/avance <slug>` fijado manda sobre esto.
+const seguirArchivo = async ($: EngineInterface, ruta: string) => {
+  const actual = await read($, proyecto)
+  if (actual?.fijado) return
+
+  const absoluta = rutaAbsoluta(await $.session.cwd(), ruta)
+  const carpeta = padre(absoluta) ?? absoluta
+  let plan = revisadas.get(carpeta)
+  if (plan === undefined) {
+    const p = await buscarPlan($, absoluta)
+    plan = p?.plan ?? null
+    revisadas.set(carpeta, plan)
+  }
+  if (plan === null || plan === actual?.plan) return
+
+  const dir = padre(padre(plan) ?? plan) ?? plan
+  await fijar($, { plan, nombre: nombre(dir), fijado: false })
 }
 
 const fijar = async ($: EngineInterface, p: Proyecto | null) => {
@@ -108,6 +144,7 @@ const fijarPorArgumento = async ($: EngineInterface, arg: string): Promise<strin
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    revisadas.clear()
 
     await $.command.register({
       name: 'avance',
@@ -144,6 +181,17 @@ export const register: Register = on => {
     return { text: await fijarPorArgumento($, arg) }
   })
 
+  // Solo observa: siempre entrega la llamada intacta y mira el archivo después.
+  on('tool.call', async ($, e, next) => {
+    const result = await next(e)
+    if (HERRAMIENTAS_CON_RUTA.includes(e.tool)) {
+      const campos = e as unknown as { file_path?: unknown; path?: unknown; notebook_path?: unknown }
+      const ruta = [campos.file_path, campos.path, campos.notebook_path].find(v => typeof v === 'string' && v !== '')
+      if (typeof ruta === 'string') await seguirArchivo($, ruta).catch(() => undefined)
+    }
+    return result
+  })
+
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const p = await read($, proyecto)
     const a = await read($, avance)
@@ -151,11 +199,12 @@ export const register: Register = on => {
 
     const { Box, Button, Text } = $.ui.resolve(e)
     const sig = siguiente(a)
+    const completa = sig === null
     const angosto = e.props.bodyColumns < 60
     const cuenta = angosto ? `${a.aceptadas}/${a.total}` : `${a.aceptadas}/${a.total} aceptadas (${porcentaje(a)} %)`
     const detalle =
-      sig === null
-        ? 'Todas las rebanadas aceptadas'
+      completa
+        ? 'Todas las rebanadas aceptadas · lista para entregar'
         : `Siguiente: ${sig.id}${sig.estado === 'pendiente' ? '' : ` (${sig.estado})`}${sig.queVeras ? ` · ${sig.queVeras}` : ''}`
 
     return (
@@ -164,14 +213,18 @@ export const register: Register = on => {
           <Text bold wrap="truncate-end">{p.nombre}</Text>
           <Box flexDirection="row" flexShrink={0}>
             {a.rebanadas.map(r => (
-              <Text color={COLOR[r.estado]}>{r.estado === 'pendiente' ? '□' : '■'}</Text>
+              <Text color={completa ? COMPLETA : COLOR[r.estado]}>{r.estado === 'pendiente' ? '□' : '■'}</Text>
             ))}
           </Box>
-          <Text bold color={COLOR.aceptada}>{cuenta}</Text>
+          <Text bold color={completa ? COMPLETA : COLOR.aceptada}>{cuenta}</Text>
           <Box flexGrow={1} flexShrink={1} />
           <Button key="ocultar" label="×" role="dismiss" plain dimColor onPress={() => update($, oculto, () => true)} />
         </Box>
-        <Text dimColor wrap="truncate-end">{detalle}</Text>
+        {completa ? (
+          <Text bold color={COMPLETA} wrap="truncate-end">{detalle}</Text>
+        ) : (
+          <Text dimColor wrap="truncate-end">{detalle}</Text>
+        )}
       </Box>
     )
   })
