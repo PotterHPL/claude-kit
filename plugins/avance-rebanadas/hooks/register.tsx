@@ -16,8 +16,8 @@ import {
 
 // Herramientas cuyo archivo dice en qué proyecto se está trabajando.
 const HERRAMIENTAS_CON_RUTA = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'NotebookEdit']
-// Al 100 %: la barra completa cambia a este color.
-const COMPLETA = '#d4a72c'
+// Paleta Netrun: los colores de Oxocarbon y NETRUN del Neovim de JD. Al 100 %: amarillo neón.
+const COMPLETA = '#f3e600'
 
 // Cada cuánto se vuelve a leer el plan: lo bastante seguido para verlo «en vivo».
 const RELECTURA_MS = 3000
@@ -25,10 +25,10 @@ const RELECTURA_MS = 3000
 const NIVELES = 12
 
 const COLOR: Record<Estado, string> = {
-  aceptada: '#4caf6e',
-  'en revisión': '#e2a94e',
-  'en curso': '#5fa8d3',
-  pendiente: '#8a8f8c',
+  aceptada: '#be95ff',
+  'en revisión': '#ee5396',
+  'en curso': '#3ddbd9',
+  pendiente: '#525252',
 }
 
 const proyecto = atom({ plugin: 'avance-rebanadas', key: 'proyecto' } as const, null as Proyecto | null)
