@@ -6,13 +6,13 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 `docs/plan-savvy-progress.md` (mascotas) y `docs/plan-avance-rebanadas.md` (barra de avance).
 
 ## Relevo
-- Avance: 1 de 4 rebanadas aceptadas (25 %).
-- R1 aceptada por JD (2026-11-19, PR #16): vio los trajes neón en `/agents-info` y aprobó la lectura del archivo de
-  estilo (ADR-0026).
-- R2 en revisión: reparto clásico D7 (astronauta, árbitro, pirata, superhéroe en fork, safari en Explore, farero).
-  67 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` y `/estilo clasico`; con su sí, R3.
-- Maqueta aprobada (fuente de todos los sprites, filas y cuadros): `docs/diseno/cuadrilla-neon.html`; publicada en
-  https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
+- Avance: 2 de 4 rebanadas aceptadas (50 %).
+- R1 aceptada (2026-11-19, PR #16). R2 aceptada (2026-11-19, PR #17): JD vio astronauta, árbitro, pirata y farero.
+- R3 en revisión: cromo en fork, camuflaje en Explore y la calavera en los caídos (cyberpunk). 70 pruebas pasan.
+  Siguiente: JD la ve con `/reload-plugins` y `/estilo cyberpunk`; con su sí, R4 (empieza probando la barra de 4 filas
+  a 80 columnas, como sugirió el consejero).
+- Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
+- Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
 
 ## Decisiones (JD, 2026-11-18 y 2026-11-19)
@@ -45,8 +45,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
 | R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | aceptada |
-| R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | en revisión |
-| R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | pendiente |
+| R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | aceptada |
+| R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | en revisión |
 | R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | pendiente |
 
 **Archivos compartidos y su dueño.** Las cuatro tocan `hooks/register.tsx`: van en orden, ninguna en paralelo.

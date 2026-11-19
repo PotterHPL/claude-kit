@@ -159,3 +159,35 @@ test('clásico: el árbitro y el farero se dibujan en terminal y escritorio', as
   // El farero: sombrero de lluvia amarillo (#F5C542) y su ala ocre (#C99A1E).
   expect(svgs.some(s => s.includes('#C99A1E') && s.includes('#F5C542'))).toBe(true)
 })
+
+const REF_CYBER = { costumes: 'ref-cromo=cyber-cromo, ref-camuflaje=cyber-camuflaje, ref-calavera=cyber-calavera' }
+const termina = async ($: Engine, id: string, ok: boolean) =>
+  ($.turn.complete as (e: unknown) => Promise<unknown>)({ agentId: id, reason: ok ? 'answer' : 'error', answer: ok ? 'ok' : '' })
+
+test('cyberpunk: fork viste de cromo y Explore de camuflaje óptico', { options: REF_CYBER }, async ($, on) => {
+  await arranca($, on, disco('cyberpunk'))
+  const ui = await spawnAll($, on, ['fork', 'Explore', 'ref-cromo', 'ref-camuflaje', 'some-other-agent'])
+  const [fork, explore, cromo, camuflaje, plain] = await Promise.all([1, 2, 3, 4, 5].map(i => cellsOf(ui, `a${i}`)))
+  expect(fork).toBe(cromo)
+  expect(explore).toBe(camuflaje)
+  expect(new Set([fork, explore, plain]).size).toBe(3)
+})
+
+test('cyberpunk: un agente fallido se dibuja como la calavera servo', { options: REF_CYBER }, async ($, on) => {
+  on('turn.complete', () => ({ text: '' }) as never)
+  await arranca($, on, disco('cyberpunk'))
+  const ui = await spawnAll($, on, ['ejecutor', 'ref-calavera'])
+  await termina($, 'a1', false)
+  await termina($, 'a2', true)
+  // Los dos quietos: el fallido es la calavera, igual que la de referencia terminada.
+  expect(await cellsOf(ui, 'a1')).toBe(await cellsOf(ui, 'a2'))
+})
+
+test('clásico: un agente fallido sigue agachado, no es calavera', { options: REF_CYBER }, async ($, on) => {
+  on('turn.complete', () => ({ text: '' }) as never)
+  await arranca($, on, disco('clasico'))
+  const ui = await spawnAll($, on, ['ejecutor', 'ref-calavera'])
+  await termina($, 'a1', false)
+  await termina($, 'a2', true)
+  expect(await cellsOf(ui, 'a1')).not.toBe(await cellsOf(ui, 'a2'))
+})
