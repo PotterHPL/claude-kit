@@ -31,7 +31,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 - **D11** · La mascota de la barra es un dibujo nuevo de 9 × 4 pixeles, animado: la barra mide 2 líneas (JD,
   2026-11-19, tras ver las de 4 y 3 líneas).
 - **D10** · En la terminal, la barra crece a 4 líneas con su mascota mientras trabajan agentes. Va detrás de la opción
-  `bandMascot`. D11 la dejó en 2 líneas (`on` por defecto): si no gusta, se apaga y vuelve la barra de 1 línea.
+  `bandMascot`. D11 la dejó en 2 líneas y D13 la apagó por defecto: la barra es de 1 línea.
 
 ## Contexto
 - Frecuencia real de agentes (333 desde el 2026-07-27): general-purpose 44 %, revisor 33 %, explorador 9 %,
@@ -129,7 +129,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 - **Revisión:** `ti-revisar`.
 
 ### R4 · La barra y el panel en neón, con su mascota (D10)
-- **Qué verás:** mientras trabajan agentes, la barra de la terminal mide 2 líneas (D11; el plan decía 4). En cyberpunk lleva pista neón con
+- **Qué verás:** la barra de la terminal sigue de 1 línea (D13). Con `bandMascot: on`, mide 2 líneas (D11; el plan decía 4). En cyberpunk lleva pista neón con
   lluvia y la calavera flotando al final; en clásico, la barra de siempre con el mago caminando al final. En cyberpunk,
   el panel usa acentos rosa y cian. Con `bandMascot: off`, la barra vuelve a 1 línea.
 - **Qué falta:** nada del alcance.
@@ -137,7 +137,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
   `BAND_MASCOT_KEY` en el reloj de `FRAME_MS`; colores de `bandTrackCells` y acentos por estilo; lluvia en braille en la
   pista vacía; SVG de escritorio con el mago o la calavera en vez del cangrejo), `hooks/band.test.tsx`,
   `.claude-plugin/plugin.json` (opción `bandMascot` y versión `1.3.0-conaltura.1`), `README.md`.
-- **Contratos:** opción `bandMascot: on | off` (`on` por defecto). Mascota de la barra: `savvy-mago` en clásico,
+- **Contratos:** opción `bandMascot: on | off` (`off` por defecto, D13). Mascota de la barra: `savvy-mago` en clásico,
   `cyber-calavera` en cyberpunk. Si la ventana no da para la barra con mascota, sale sin mascota.
 - **Escenarios:** ninguno.
 - **Pruebas:** `terminal: la barra lleva la mascota de 2 filas al final`;
@@ -158,7 +158,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 | D5 caídos / barra | R3 / R4 |
 | D6, D7 | R2 |
 | D8 | R3 |
-| D9, D10 | R4 |
+| D9, D10, D11, D13 | R4 |
 
 ## Plan de pruebas
 - En cada rebanada: `claude plugin test plugins/savvy-progress` y `claude plugin validate plugins/savvy-progress`,
@@ -168,7 +168,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
   errores de tipos que no son de este trabajo, en pruebas del autor (`isCollapsed`).
 - Vista previa: JD corre `/reload-plugins` con la rama de la rebanada y lanza un par de agentes en cada estilo.
 - Pre-mortem: si R1 tarda tres días, es por la lectura del archivo en Windows (se prueba en la primera hora). Si R4
-  tarda tres días, es por la fila de 4 líneas (se prueba antes que los colores).
+  tarda tres días, es por la barra con mascota (pasó: se probó a 4, 3 y 2 líneas y quedó apagada, D13).
 
 ## Supuestos (JD puede vetarlos)
 1. El tipo de agente de un fork llega al mod como `fork`, como en los transcripts.
