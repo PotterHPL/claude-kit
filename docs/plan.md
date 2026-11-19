@@ -6,12 +6,13 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 `docs/plan-savvy-progress.md` (mascotas) y `docs/plan-avance-rebanadas.md` (barra de avance).
 
 ## Relevo
-- Avance: 3 de 4 rebanadas aceptadas (75 %).
-- R1 (PR #16), R2 (PR #17) y R3 (PR #18) aceptadas el 2026-11-19. En R3, JD vio el cromo, el camuflaje y la calavera.
-- R4 en revisión: acentos neón y lluvia de braille en cyberpunk; la barra se queda de 1 línea y sin personaje
-  (D13; la mascota animada sigue disponible con `bandMascot: on`). Versión `1.3.0-conaltura.1`. 79 pruebas pasan.
-- Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
-- Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
+- Avance: 4 de 4 rebanadas aceptadas (100 %). **Proyecto cerrado el 2026-11-19.**
+- R1 (PR #16), R2 (PR #17), R3 (PR #18) y R4 (PR #19) aceptadas el 2026-11-19. En R4, JD vio la barra de una línea, sin
+  personaje (D13), y decidió que el botón `×N` se queda.
+- Versión `1.3.0-conaltura.1`. 79 pruebas pasan. `validate` deja 3 errores de tipos en pruebas del autor (`isCollapsed`).
+- Lecciones en la ficha (`savvy-progress-conaltura`, § Notas técnicas): `validate` revisa tipos pero dice «pasa»; el
+  simulador no deja ver los `blit`; el estilo se lee bien en Windows con `USERPROFILE`.
+- Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v10).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
 
 ## Decisiones (JD, 2026-11-18 y 2026-11-19)
@@ -51,7 +52,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 | R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | aceptada |
 | R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | aceptada |
 | R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | aceptada |
-| R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | en revisión |
+| R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | aceptada |
 
 **Archivos compartidos y su dueño.** Las cuatro tocan `hooks/register.tsx`: van en orden, ninguna en paralelo.
 `hooks/crews.test.ts` y este plan: R1. `README.md` del plugin: cada rebanada suma su parte, en orden.
