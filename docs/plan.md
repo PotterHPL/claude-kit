@@ -6,9 +6,11 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 `docs/plan-savvy-progress.md` (mascotas) y `docs/plan-avance-rebanadas.md` (barra de avance).
 
 ## Relevo
-- Avance: 0 de 4 rebanadas aceptadas (0 %).
-- R1 en revisión (PR #16): `/estilo` elige la cuadrilla, entra la cyber y salen `obra` y `/cuadrilla`.
-  65 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` y `/estilo cyberpunk`; con su sí, R2.
+- Avance: 1 de 4 rebanadas aceptadas (25 %).
+- R1 aceptada por JD (2026-11-19, PR #16): vio los trajes neón en `/agents-info` y aprobó la lectura del archivo de
+  estilo (ADR-0026).
+- R2 en revisión: reparto clásico D7 (astronauta, árbitro, pirata, superhéroe en fork, safari en Explore, farero).
+  67 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` y `/estilo clasico`; con su sí, R3.
 - Maqueta aprobada (fuente de todos los sprites, filas y cuadros): `docs/diseno/cuadrilla-neon.html`; publicada en
   https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
@@ -42,8 +44,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
-| R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | en revisión |
-| R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | pendiente |
+| R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | aceptada |
+| R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | en revisión |
 | R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | pendiente |
 | R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | pendiente |
 
