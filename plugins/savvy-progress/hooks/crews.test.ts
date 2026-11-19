@@ -47,6 +47,7 @@ test('sin archivo de estilo, el método viste la cuadrilla savvy', async ($, on)
   const ui = await spawnAll($, on, [...CREW, 'some-other-agent'])
   const cells = await trajes(ui)
   const plain = await cellsOf(ui, `a${CREW.length + 1}`)
+  expect(plain).toBeDefined()
   for (const c of cells) {
     expect(c).toBeDefined()
     expect(c).not.toBe(plain)
@@ -107,7 +108,9 @@ test('la opción costumes gana sobre el estilo', { options: { costumes: 'revisor
   await arranca($, on, disco('cyberpunk'))
   const ui = await spawnAll($, on, ['revisor', 'some-other-agent'])
   // Los dos son el cangrejo sin traje: revisor por la opción, el otro por la regla (sin esfuerzo).
-  expect(await cellsOf(ui, 'a1')).toBe(await cellsOf(ui, 'a2'))
+  const [revisor, otro] = [await cellsOf(ui, 'a1'), await cellsOf(ui, 'a2')]
+  expect(revisor).toBeDefined()
+  expect(revisor).toBe(otro)
 })
 
 test('un agente fallido se agacha: se dibuja distinto de uno terminado', async ($, on) => {
@@ -128,8 +131,8 @@ test('escritorio: la cuadrilla se dibuja, también la cyber', async ($, on) => {
   await $.agent.spawn({ tool_use_id: 't1', prompt: 'p', description: 'Review', subagentType: 'revisor', provider: 'engine', parentModel: 'claude-opus-5-5', background: true, fork: false } as never)
   const ui = await $.ui.mount({ plugin: PLUGIN, surface: 'desktop', component: 'Pane', requestId: 'savvy-agents', props: pane })
   const svgs = await ui.findAll({ type: 'Svg' })
-  // El cazador de glitches: cinta rosa neón sobre el cangrejo.
-  expect(svgs.some(s => String(s.props.source).toUpperCase().includes('#FF2E88'))).toBe(true)
+  // El cazador de glitches: cinta rosa neón y monóculo rojo; el rojo solo lo lleva él en la cuadrilla.
+  expect(svgs.some(s => { const t = String(s.props.source).toUpperCase(); return t.includes('#FF2E88') && t.includes('#FF3B3B') })).toBe(true)
 })
 
 // Agentes de referencia: la opción `costumes` les pone un traje conocido para comparar.
@@ -153,11 +156,14 @@ test('clásico: el árbitro y el farero se dibujan en terminal y escritorio', as
   const [arbitro, farero, plain] = await Promise.all([1, 2, 3].map(i => cellsOf(ui, `a${i}`)))
   expect(arbitro).toBeDefined()
   expect(farero).toBeDefined()
+  expect(plain).toBeDefined()
   expect(new Set([arbitro, farero, plain]).size).toBe(3)
   const escritorio = await $.ui.mount({ plugin: PLUGIN, surface: 'desktop', component: 'Pane', requestId: 'savvy-agents', props: pane })
   const svgs = (await escritorio.findAll({ type: 'Svg' })).map(s => String(s.props.source).toUpperCase())
   // El farero: sombrero de lluvia amarillo (#F5C542) y su ala ocre (#C99A1E).
   expect(svgs.some(s => s.includes('#C99A1E') && s.includes('#F5C542'))).toBe(true)
+  // El árbitro: gorra gris carbón (#4A4A48); entre los tres agentes, solo él la lleva.
+  expect(svgs.some(s => s.includes('#4A4A48'))).toBe(true)
 })
 
 const REF_CYBER = { costumes: 'ref-cromo=cyber-cromo, ref-camuflaje=cyber-camuflaje, ref-calavera=cyber-calavera' }
@@ -168,6 +174,7 @@ test('cyberpunk: fork viste de cromo y Explore de camuflaje óptico', { options:
   await arranca($, on, disco('cyberpunk'))
   const ui = await spawnAll($, on, ['fork', 'Explore', 'ref-cromo', 'ref-camuflaje', 'some-other-agent'])
   const [fork, explore, cromo, camuflaje, plain] = await Promise.all([1, 2, 3, 4, 5].map(i => cellsOf(ui, `a${i}`)))
+  for (const c of [fork, explore, plain]) expect(c).toBeDefined()
   expect(fork).toBe(cromo)
   expect(explore).toBe(camuflaje)
   expect(new Set([fork, explore, plain]).size).toBe(3)
@@ -180,14 +187,21 @@ test('cyberpunk: un agente fallido se dibuja como la calavera servo', { options:
   await termina($, 'a1', false)
   await termina($, 'a2', true)
   // Los dos quietos: el fallido es la calavera, igual que la de referencia terminada.
-  expect(await cellsOf(ui, 'a1')).toBe(await cellsOf(ui, 'a2'))
+  const [caido, calavera] = [await cellsOf(ui, 'a1'), await cellsOf(ui, 'a2')]
+  expect(caido).toBeDefined()
+  expect(caido).toBe(calavera)
 })
 
 test('clásico: un agente fallido sigue agachado, no es calavera', { options: REF_CYBER }, async ($, on) => {
   on('turn.complete', () => ({ text: '' }) as never)
   await arranca($, on, disco('clasico'))
-  const ui = await spawnAll($, on, ['ejecutor', 'ref-calavera'])
+  const ui = await spawnAll($, on, ['ejecutor', 'ejecutor', 'ref-calavera'])
   await termina($, 'a1', false)
   await termina($, 'a2', true)
-  expect(await cellsOf(ui, 'a1')).not.toBe(await cellsOf(ui, 'a2'))
+  await termina($, 'a3', true)
+  const [caido, terminado, calavera] = [await cellsOf(ui, 'a1'), await cellsOf(ui, 'a2'), await cellsOf(ui, 'a3')]
+  for (const c of [caido, terminado, calavera]) expect(c).toBeDefined()
+  // Agachado: distinto del mismo traje terminado de pie, y no es la calavera.
+  expect(caido).not.toBe(terminado)
+  expect(caido).not.toBe(calavera)
 })

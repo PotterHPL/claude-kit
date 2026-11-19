@@ -1,6 +1,6 @@
 {
   "name": "savvy-progress",
-  "version": "1.2.1-conaltura.1",
+  "version": "1.3.0-conaltura.1",
   "description": "Progress bar above the prompt for /savvy-flow, plus an agents panel (/agents-info): running, finished and planned subagents with model, task progress, context, cost and time.",
   "author": {
     "name": "johnnyvizz",
@@ -40,6 +40,16 @@
       "options": [
         "savvy",
         "any"
+      ]
+    },
+    "bandMascot": {
+      "type": "string",
+      "title": "Mascot on the band",
+      "description": "on: the band is two rows tall with the wizard (classic style) or the servo skull (cyberpunk) at its end; off: the one-row band",
+      "default": "off",
+      "options": [
+        "on",
+        "off"
       ]
     },
     "terminalCrabs": {
