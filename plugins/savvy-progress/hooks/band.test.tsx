@@ -94,12 +94,12 @@ const montar = ($: Engine, surface: 'terminal' | 'desktop', bodyColumns = 100) =
   $.ui.mount({ plugin: 'savvy-progress', surface, component: 'AbovePrompt', props: { ...(BAND.props as object), bodyColumns } as never })
 const braille = (t: string) => [...t].filter(c => c >= '\u2800' && c <= '\u28ff').length
 
-test('terminal: la barra lleva la mascota de 3 filas al final', async ($, on) => {
+test('terminal: la barra lleva la mascota de 2 filas al final', async ($, on) => {
   await sesionEstilo($, on, 'clasico')
   const ui = await montar($, 'terminal')
   const mascota = await ui.find({ type: 'Raster', key: 'band-mascot' })
   expect(mascota).toBeDefined()
-  expect(mascota?.props.rows).toBe(3)
+  expect(mascota?.props.rows).toBe(2)
 })
 
 test('bandMascot off: la barra vuelve a una fila, sin mascota', { options: { bandMascot: 'off' } }, async ($, on) => {

@@ -478,23 +478,30 @@ const BAND_MASCOT_KEY = 'band-mascot'
 const MASCOT_MIN_COLUMNS = 60
 let bandMascot = true
 const mascotOf = (): string => (estilo === 'cyberpunk' ? 'cyber-calavera' : 'savvy-mago')
-// In the terminal the band's mascot is redrawn by hand at 7 × 6 pixels, three rows (D11, JD found the
-// 9 × 8 skull too big): halving a sprite blurs the faces. The desktop keeps the full crab size.
-const BAND_MASCOT = { columns: 7, rows: 3 }
+// In the terminal the band's mascot is drawn by hand at four pixels tall, two rows (D11: JD found the 9 × 8
+// skull too big, then the 7 × 6 one; two rows it is). Halving a sprite would blur it, so these are new
+// drawings. The desktop keeps the full crab size.
+const BAND_MASCOT = { columns: 9, rows: 2 }
 type MascotMini = { rows: string[]; frames: [x: number, y: number, ch: string][][]; palette: Record<string, string> }
 // A function, not a constant: the palettes it uses are declared further down the module.
 const mascotMini = (): Record<Estilo, MascotMini> => ({
-  // The wizard: starred hat, staff with an orb; the orb glows and the star twinkles.
+  // The wizard: starred hat, staff with an orb; the orb glows, the star twinkles and it steps.
   clasico: {
     palette: { c: CLAY, k: INK, p: '#B382FF', Z: '#F5C542', y: '#F5C542', L: '#DBFF69', d: '#7A4A26', w: '#F8F6F1' },
-    rows: ['..pZp..', 'Lppppp.', 'dccccc.', 'dckckc.', 'ccccccc', '.c.c.c.'],
-    frames: [[], [[0, 1, 'Z']], [[0, 1, 'w'], [3, 0, 'y']], [[0, 1, 'Z']]],
+    rows: ['...pZp...', '.Lppppp..', '.dckckc..', '.d.c.c...'],
+    frames: [[], [[1, 1, 'Z']], [[1, 1, 'w'], [4, 0, 'y'], [3, 3, '.'], [4, 3, 'c']], [[1, 1, 'Z'], [5, 3, '.'], [6, 3, 'c']]],
   },
-  // The servo skull: sockets, the red optic, teeth and the thruster's glow; the optic glints.
+  // The servo skull: cranium, a socket and the red optic, teeth, an antenna each side and the thruster.
+  // The optic flashes, the antennas twitch, a red beam scans out and the thruster flickers.
   cyberpunk: {
-    palette: { ...CYBER_PALETTE, h: '#E8E2CF' },
-    rows: ['.hhhhh.', 'hkkhrrh', 'hkkhrrh', 'hhhkhhh', '.hkhkh.', '..nNn..'],
-    frames: [[[5, 1, 'w']], [[6, 1, 'w'], [2, 5, 'N'], [3, 5, 'n'], [4, 5, 'N']], [[5, 1, 'w'], [6, 1, 'w'], [5, 2, 'w'], [6, 2, 'w']], []],
+    palette: { ...CYBER_PALETTE, h: '#E8E2CF', R: '#8C1C1C' },
+    rows: ['..hhhhh..', '.Shkhrhs.', '..hkhkh..', '...nNn...'],
+    frames: [
+      [],
+      [[5, 1, 'w'], [1, 1, '.'], [1, 0, 'S'], [3, 3, 'N'], [4, 3, 'n'], [5, 3, 'N']],
+      [[8, 1, 'r'], [3, 3, '.'], [5, 3, '.']],
+      [[7, 1, '.'], [7, 0, 's'], [8, 1, 'R'], [8, 2, 'R']],
+    ],
   },
 })
 const mascotCells = (frame: number | null): Cells => {
