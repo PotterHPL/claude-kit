@@ -1438,7 +1438,7 @@ export const register: Register = (on, options) => {
         const ms = await $.clock.now()
         // The band's mascot moves all the time it shows, agents running or not.
         if (mascotShown && bandRequestId)
-          await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascotCells(frameAt(ms)) }).catch(() => undefined)
+          await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascotCells(frameAt(ms)).cells }).catch(() => undefined)
         const list = await read($, agents)
         const running = list.filter(a => a.status === 'running')
         if (!running.length) return

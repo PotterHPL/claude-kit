@@ -161,7 +161,9 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 ## Plan de pruebas
 - En cada rebanada: `claude plugin test plugins/savvy-progress` y `claude plugin validate plugins/savvy-progress`,
   con 0 fallos. `tsc` no aplica: el repo no tiene `tsconfig.json` y los tipos de `claude-code` los da el runtime
-  (hallazgo de R1).
+  (hallazgo de R1). **`validate` sí revisa los tipos, pero dice «pasa» aunque encuentre errores `TS`:** hay que leer
+  sus líneas `error TS`, no solo la última (hallazgo de R4: un `.cells` faltante dejaba quieta la mascota). Quedan 3
+  errores de tipos que no son de este trabajo, en pruebas del autor (`isCollapsed`).
 - Vista previa: JD corre `/reload-plugins` con la rama de la rebanada y lanza un par de agentes en cada estilo.
 - Pre-mortem: si R1 tarda tres días, es por la lectura del archivo en Windows (se prueba en la primera hora). Si R4
   tarda tres días, es por la fila de 4 líneas (se prueba antes que los colores).
