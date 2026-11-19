@@ -260,13 +260,18 @@ export const register: Register = on => {
           <Button key="ocultar" label="×" role="dismiss" plain dimColor onPress={() => update($, oculto, () => true)} />
         </Box>
         <Box flexDirection="row" columnGap={1} flexWrap="nowrap" overflow="hidden">
-          <Text bold color={TONO[linea.tono]} dimColor={linea.tono === 'sigue'} wrap="truncate-end">
-            {linea.titulo}
-          </Text>
-          {linea.detalle ? (
-            <Text dimColor={linea.tono !== 'curso'} wrap="truncate-end">
-              {linea.detalle}
+          {/* El título no se encoge: si falta espacio, se corta el detalle. */}
+          <Box flexShrink={0}>
+            <Text bold color={TONO[linea.tono]} dimColor={linea.tono === 'sigue'}>
+              {linea.titulo}
             </Text>
+          </Box>
+          {linea.detalle ? (
+            <Box flexShrink={1} overflow="hidden">
+              <Text dimColor={linea.tono !== 'curso'} wrap="truncate-end">
+                {linea.detalle}
+              </Text>
+            </Box>
           ) : null}
         </Box>
       </Box>
