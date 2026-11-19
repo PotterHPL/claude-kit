@@ -29,7 +29,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 - **D11** · La mascota de la barra es un dibujo nuevo de 9 × 4 pixeles, animado: la barra mide 2 líneas (JD,
   2026-11-19, tras ver las de 4 y 3 líneas).
 - **D10** · En la terminal, la barra crece a 4 líneas con su mascota mientras trabajan agentes. Va detrás de la opción
-  `bandMascot` (`on` por defecto): si no gusta, se apaga y vuelve la barra de 1 línea.
+  `bandMascot`. D11 la dejó en 2 líneas (`on` por defecto): si no gusta, se apaga y vuelve la barra de 1 línea.
 
 ## Contexto
 - Frecuencia real de agentes (333 desde el 2026-07-27): general-purpose 44 %, revisor 33 %, explorador 9 %,
@@ -127,22 +127,22 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 - **Revisión:** `ti-revisar`.
 
 ### R4 · La barra y el panel en neón, con su mascota (D10)
-- **Qué verás:** mientras trabajan agentes, la barra de la terminal mide 4 líneas. En cyberpunk lleva pista neón con
+- **Qué verás:** mientras trabajan agentes, la barra de la terminal mide 2 líneas (D11; el plan decía 4). En cyberpunk lleva pista neón con
   lluvia y la calavera flotando al final; en clásico, la barra de siempre con el mago caminando al final. En cyberpunk,
   el panel usa acentos rosa y cian. Con `bandMascot: off`, la barra vuelve a 1 línea.
 - **Qué falta:** nada del alcance.
-- **Archivos:** modifica `hooks/register.tsx` (barra de la terminal: `Raster` de 9 × 4 con la mascota y su blit
+- **Archivos:** modifica `hooks/register.tsx` (barra de la terminal: `Raster` de 9 × 2 celdas con la mascota y su blit
   `BAND_MASCOT_KEY` en el reloj de `FRAME_MS`; colores de `bandTrackCells` y acentos por estilo; lluvia en braille en la
   pista vacía; SVG de escritorio con el mago o la calavera en vez del cangrejo), `hooks/band.test.tsx`,
   `.claude-plugin/plugin.json` (opción `bandMascot` y versión `1.3.0-conaltura.1`), `README.md`.
 - **Contratos:** opción `bandMascot: on | off` (`on` por defecto). Mascota de la barra: `savvy-mago` en clásico,
   `cyber-calavera` en cyberpunk. Si la ventana no da para la barra con mascota, sale sin mascota.
 - **Escenarios:** ninguno.
-- **Pruebas:** `terminal: con agentes trabajando, la barra mide 4 filas y lleva la mascota del estilo`;
+- **Pruebas:** `terminal: la barra lleva la mascota de 2 filas al final`;
   `bandMascot off: la barra vuelve a una fila`; `cyberpunk: la pista usa los colores neón`;
   `escritorio: la barra lleva el mago o la calavera`; `la mascota de la barra se repinta con su propia clave`.
   Terminado: los tres comandos → 0 fallan.
-- **Riesgos:** que la fila de la barra se desacomode con un `Raster` de 4 filas en ventanas angostas. Se prueba a 80
+- **Riesgos:** que la fila de la barra se desacomode con un `Raster` de varias filas en ventanas angostas. Se prueba a 80
   columnas antes de lo demás; si no cabe, la mascota se omite.
 - **Rama y PR:** `feat/cuadrilla-neon-r4`.
 - **Quién:** Claude.
