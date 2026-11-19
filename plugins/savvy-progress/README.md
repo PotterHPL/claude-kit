@@ -36,7 +36,7 @@ Install instructions are in the [repository README](../../README.md).
 
 This fork dresses the agent types of TI's method with one of two crews, chosen by the style that `/estilo` writes to `~/.claude/estilo-cierre.txt` (`clasico` or `cyberpunk`; no file, or anything else, is classic). The mod rereads the file every two seconds, so a change shows without restarting.
 
-- **Classic** (the default): the savvy crew, characters in the line of the author's costumes. `explorador` is a safari explorer, `ejecutor` a robot, `revisor` a judge, `consejero` a wizard, `Plan` a captain, `claude-code-guide` a professor and `general-purpose` a superhero.
+- **Classic** (the default): the savvy crew, dealt by how often each type runs, so the favourites show most. `general-purpose` (44 % of agents) is the author's astronaut, `revisor` a referee (shows the yellow card, blows the whistle, shows the red), `explorador` the author's pirate, `ejecutor` a robot, `fork` a superhero, `Plan` a captain, `Explore` a safari explorer, `claude-code-guide` a lighthouse keeper (lantern and pipe) and `consejero` a wizard.
 - **Cyberpunk**: the cyber crew below («Cuadrilla Neón», plan in `docs/plan.md`).
 
 The `costumes` option still wins over the crew. Any other agent dresses as before: its savvy tier, `Explore` as the pirate, or its model and effort.

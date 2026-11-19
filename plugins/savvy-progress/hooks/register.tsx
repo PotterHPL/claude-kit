@@ -890,11 +890,11 @@ const SAVVY_CREW: Record<string, MiniCostume> = {
     frames: [[[2, 3, 'w']], [[4, 3, 'w'], [4, 0, 'K']], [[6, 3, 'w']], [[4, 3, 'w'], [4, 0, 'K']]],
     blinks: false,
   },
-  // Judge (revisor): white wig, gavel; raises it and brings it down.
-  'savvy-juez': {
+  // Referee (revisor): grey cap, striped shirt, whistle; shows the yellow card, blows, squints, shows the red.
+  'savvy-arbitro': {
     palette: SAVVY_PALETTE,
-    rows: ['.wwwwwww.', 'wwwwwwwww', 'wcccccccw', '.ckccckc.', 'ccccccccc', '.ccccccc.'],
-    frames: [[[8, 3, 'Y'], [8, 2, 'd']], [[8, 3, 'Y'], [8, 2, 'd']], [[8, 5, 'Y'], [7, 5, 'd']], [[8, 5, 'Y'], [7, 5, 'd'], [8, 6, 'Z']]],
+    rows: ['.........', '..KKKKK..', '.ccccccc.', '.ckccckc.', 'ccccscccc', '.kwkwkwk.'],
+    frames: [[], [[8, 3, 'y'], [8, 2, 'y']], [[5, 4, 'w'], [6, 4, 'W']], [[8, 3, 'r'], [8, 2, 'r'], [2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']]],
   },
   // Wizard (consejero): starred hat, staff in hand; the orb glows and the star twinkles.
   'savvy-mago': {
@@ -908,11 +908,11 @@ const SAVVY_CREW: Record<string, MiniCostume> = {
     rows: ['..wwwww..', '.kkkZkkk.', '.ccccccc.', '.ckccckc.', 'ccccccccY', '.ccccccc.'],
     frames: [[], [[8, 3, 'Y']], [[8, 3, 'Y'], [8, 2, 'y'], [2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[8, 3, 'Y']]],
   },
-  // Professor (claude-code-guide): mortarboard, book in hand; the tassel swings.
-  'savvy-profesor': {
+  // Lighthouse keeper (claude-code-guide): yellow rain hat, pipe, lantern; the lantern lights the way, the pipe smokes.
+  'savvy-farero': {
     palette: SAVVY_PALETTE,
-    rows: ['.kkkkkkk.', '...kkk.Z.', '.ccccccZ.', '.ckccckc.', 'ccccccccb', '.cccccccb'],
-    frames: [[], [[7, 2, '.'], [8, 2, 'Z']], [[7, 2, '.'], [8, 1, 'Z'], [7, 1, '.']], [[7, 2, '.'], [8, 2, 'Z']]],
+    rows: ['..yyyyy..', '.YYYYYYYY', '.ccccccc.', 'dckccckc.', 'ccccccccs', '.cccccccy'],
+    frames: [[], [[8, 5, 'w'], [8, 6, 'y'], [0, 2, 'W']], [[0, 1, 'W']], [[8, 5, 'Y'], [0, 0, 'W']]],
   },
   // Superhero (general-purpose): mask, emblem, red cape; the cape flutters.
   'savvy-heroe': {
@@ -983,9 +983,11 @@ Object.assign(MINI_COSTUMES, CYBER_CREW)
 type Estilo = 'clasico' | 'cyberpunk'
 const ESTILO_MS = 2000
 const CREWS: Record<Estilo, Record<string, string>> = {
+  // By how often each type runs (D7): the astronaut and the pirate, the favourites, where they show most.
   clasico: {
-    explorador: 'savvy-safari', ejecutor: 'savvy-robot', revisor: 'savvy-juez', consejero: 'savvy-mago',
-    Plan: 'savvy-capitan', 'claude-code-guide': 'savvy-profesor', 'general-purpose': 'savvy-heroe',
+    'general-purpose': 'fable', revisor: 'savvy-arbitro', explorador: 'explore', ejecutor: 'savvy-robot',
+    fork: 'savvy-heroe', Plan: 'savvy-capitan', Explore: 'savvy-safari', 'claude-code-guide': 'savvy-farero',
+    consejero: 'savvy-mago',
   },
   cyberpunk: {
     explorador: 'cyber-netrunner', ejecutor: 'cyber-brazo', revisor: 'cyber-cazador', consejero: 'cyber-oraculo',
