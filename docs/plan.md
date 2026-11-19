@@ -8,9 +8,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 ## Relevo
 - Avance: 3 de 4 rebanadas aceptadas (75 %).
 - R1 (PR #16), R2 (PR #17) y R3 (PR #18) aceptadas el 2026-11-19. En R3, JD vio el cromo, el camuflaje y la calavera.
-- R4 en revisión: barra de 2 líneas con un servocráneo y un mago nuevos de 9 × 4, animados todo el tiempo que
-  se ve la barra, haya o no agentes (D11; JD vio grandes las de 4 y 3 líneas, y la primera de 2 líneas «no se ve bien») (`bandMascot`), acentos neón y lluvia en cyberpunk,
-  versión `1.3.0-conaltura.1`. 79 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` en los dos estilos.
+- R4 en revisión: acentos neón y lluvia de braille en cyberpunk; la barra se queda de 1 línea y sin personaje
+  (D13; la mascota animada sigue disponible con `bandMascot: on`). Versión `1.3.0-conaltura.1`. 79 pruebas pasan.
 - Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
 - Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
@@ -26,6 +25,9 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
   Explore.
 - **D8** · Cyberpunk: cangrejo de cromo en fork, camuflaje óptico en Explore.
 - **D9** · Clásico: el mago camina en la barra y sigue vistiendo al consejero.
+- **D13** · La barra se queda de 1 línea y sin personaje: `bandMascot` queda apagada por defecto (JD, 2026-11-19,
+  tras probar 4, 3 y 2 líneas y comparar braille, cuadrantes y ASCII en la maqueta v10). El código de la mascota
+  queda detrás de la opción.
 - **D11** · La mascota de la barra es un dibujo nuevo de 9 × 4 pixeles, animado: la barra mide 2 líneas (JD,
   2026-11-19, tras ver las de 4 y 3 líneas).
 - **D10** · En la terminal, la barra crece a 4 líneas con su mascota mientras trabajan agentes. Va detrás de la opción

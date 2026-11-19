@@ -97,7 +97,7 @@ const montar = ($: Engine, surface: 'terminal' | 'desktop', bodyColumns = 100) =
   $.ui.mount({ plugin: 'savvy-progress', surface, component: 'AbovePrompt', requestId: 'banda', props: { ...(BAND.props as object), bodyColumns } as never })
 const braille = (t: string) => [...t].filter(c => c >= '\u2800' && c <= '\u28ff').length
 
-test('terminal: la barra lleva la mascota de 2 filas al final', async ($, on) => {
+test('terminal: la barra lleva la mascota de 2 filas al final', { options: { bandMascot: 'on' } }, async ($, on) => {
   await sesionEstilo($, on, 'clasico')
   const ui = await montar($, 'terminal')
   const mascota = await ui.find({ type: 'Raster', key: 'band-mascot' })
@@ -105,14 +105,14 @@ test('terminal: la barra lleva la mascota de 2 filas al final', async ($, on) =>
   expect(mascota?.props.rows).toBe(2)
 })
 
-test('bandMascot off: la barra vuelve a una fila, sin mascota', { options: { bandMascot: 'off' } }, async ($, on) => {
+test('por defecto la barra es de una fila, sin mascota', async ($, on) => {
   await sesionEstilo($, on, 'cyberpunk')
   const ui = await montar($, 'terminal')
   expect(await ui.find({ type: 'Raster', key: 'band-mascot' })).toBeUndefined()
   expect(await ui.find({ type: 'Raster', key: 'band-track' })).toBeDefined()
 })
 
-test('ventana angosta: la barra sale sin mascota', async ($, on) => {
+test('ventana angosta: la barra sale sin mascota', { options: { bandMascot: 'on' } }, async ($, on) => {
   await sesionEstilo($, on, 'clasico')
   const ui = await montar($, 'terminal', 50)
   expect(await ui.find({ type: 'Raster', key: 'band-mascot' })).toBeUndefined()
@@ -133,14 +133,14 @@ test('clásico: la pista no lleva lluvia', async ($, on) => {
   expect(braille(pista)).toBe(4)
 })
 
-test('escritorio: la barra lleva el mago en clásico', async ($, on) => {
+test('escritorio: la barra lleva el mago en clásico', { options: { bandMascot: 'on' } }, async ($, on) => {
   await sesionEstilo($, on, 'clasico')
   const ui = await montar($, 'desktop')
   const svg = String((await ui.find({ type: 'Svg' }))?.props.source).toUpperCase()
   expect(svg).toContain('#B382FF')
 })
 
-test('escritorio: la barra lleva la calavera en cyberpunk', async ($, on) => {
+test('escritorio: la barra lleva la calavera en cyberpunk', { options: { bandMascot: 'on' } }, async ($, on) => {
   await sesionEstilo($, on, 'cyberpunk')
   const ui = await montar($, 'desktop')
   const svg = String((await ui.find({ type: 'Svg' }))?.props.source).toUpperCase()

@@ -476,7 +476,7 @@ const BAND_SPIN_KEY = 'band-spin'
 // classic style (D9), the servo skull in cyberpunk (D5). The `bandMascot` option turns it off.
 const BAND_MASCOT_KEY = 'band-mascot'
 const MASCOT_MIN_COLUMNS = 60
-let bandMascot = true
+let bandMascot = false
 // Whether the terminal band last drew the mascot: the clock repaints it only then.
 let mascotShown = false
 const mascotOf = (): string => (estilo === 'cyberpunk' ? 'cyber-calavera' : 'savvy-mago')
@@ -1351,7 +1351,8 @@ async function autoOpen($: EngineInterface, key: string): Promise<void> {
 
 export const register: Register = (on, options) => {
   crabMode = crabModeOf(options.terminalCrabs)
-  bandMascot = options.bandMascot !== 'off'
+  // Off by default (D13): JD kept the one-row band with no character after trying 4, 3 and 2 rows.
+  bandMascot = options.bandMascot === 'on'
   agentTiers = agentTiersOf(options.costumes)
   on('session.start', async ($, e, next) => {
     const started = await next(e)
