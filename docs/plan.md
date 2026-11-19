@@ -7,7 +7,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 
 ## Relevo
 - Avance: 0 de 4 rebanadas aceptadas (0 %).
-- Plan aprobado por JD el 2026-11-19 (`ti-plan`); siguiente: rebanada 1.
+- R1 en revisión (PR #16): `/estilo` elige la cuadrilla, entra la cyber y salen `obra` y `/cuadrilla`.
+  65 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` y `/estilo cyberpunk`; con su sí, R2.
 - Maqueta aprobada (fuente de todos los sprites, filas y cuadros): `docs/diseno/cuadrilla-neon.html`; publicada en
   https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
@@ -41,7 +42,7 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
-| R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | pendiente |
+| R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | en revisión |
 | R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | pendiente |
 | R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | pendiente |
 | R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | pendiente |
@@ -154,8 +155,9 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 | D9, D10 | R4 |
 
 ## Plan de pruebas
-- En cada rebanada: `claude plugin test plugins/savvy-progress`, `tsc -p plugins/savvy-progress` y
-  `claude plugin validate plugins/savvy-progress`, con 0 fallos.
+- En cada rebanada: `claude plugin test plugins/savvy-progress` y `claude plugin validate plugins/savvy-progress`,
+  con 0 fallos. `tsc` no aplica: el repo no tiene `tsconfig.json` y los tipos de `claude-code` los da el runtime
+  (hallazgo de R1).
 - Vista previa: JD corre `/reload-plugins` con la rama de la rebanada y lanza un par de agentes en cada estilo.
 - Pre-mortem: si R1 tarda tres días, es por la lectura del archivo en Windows (se prueba en la primera hora). Si R4
   tarda tres días, es por la fila de 4 líneas (se prueba antes que los colores).
