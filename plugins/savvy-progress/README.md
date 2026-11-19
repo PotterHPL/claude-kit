@@ -54,6 +54,10 @@ A finished agent's steps read as complete (`3/3`), since an agent may end withou
 | `Plan` | `cyber-fixer`: dark shades | opens a cyan holomap, the shades glint |
 | `claude-code-guide` | `cyber-guia`: neon guide, a sign on a pole | the neon flickers and sparks |
 | `general-purpose` | `cyber-samurai`: topknot, pink sash, light katana | the blade gleams, slashes, rests |
+| `fork` | `cyber-cromo`: an all-chrome crab, legs too, the copy of the session | a shine runs over it, the eyes flash |
+| `Explore` | `cyber-camuflaje`: optical camouflage | turns to an outline, vanishes but for the eyes, comes back by halves |
+
+In the cyberpunk style a failed agent becomes `cyber-calavera`, a floating servo skull with a red optic, in place of the crouching crab.
 
 Every terminal crab blinks once every three seconds (a visor or an eyepatch stays open), and a failed agent's crab crouches with a drop of sweat. A finished one stands still. On the desktop the crew is the terminal costume at three times its size.
 

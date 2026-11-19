@@ -770,6 +770,11 @@ const runCostume = (a: AgentRun): string => {
   return a.type === 'Explore' ? 'explore' : runTier(a)
 }
 
+// What a run is drawn as: its costume, except a failed run in the cyberpunk style, which becomes the
+// servo skull (D5). In the classic style a failed run keeps its costume and crouches.
+const isSkull = (a: AgentRun): boolean => estilo === 'cyberpunk' && a.status === 'failed'
+const drawnCostume = (a: AgentRun): string => (isSkull(a) ? 'cyber-calavera' : runCostume(a))
+
 const CRAB_SCALE = 1.1
 
 // Body and props nest inside `bd` so a prop rides the bob and adds its own motion;
@@ -973,6 +978,25 @@ const CYBER_CREW: Record<string, MiniCostume> = {
     rows: ['....k....', '..kkkkk..', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.cmmmmmc.'],
     frames: [[[8, 1, 'n'], [8, 2, 'n'], [8, 3, 'n']], [[8, 0, 'w'], [8, 1, 'n'], [8, 2, 'n'], [8, 3, 'n']], [[6, 0, 'n'], [7, 1, 'n'], [8, 2, 'w']], [[8, 3, 'n']]],
   },
+  // Chrome crab (fork): all metal, legs too, the exact copy of the session; a shine runs over it, the eyes flash.
+  'cyber-cromo': {
+    palette: { ...CYBER_PALETTE, c: '#AEB4BC', W: '#E2E6EA', S: '#6B7079' }, blinks: false,
+    rows: ['.........', '..SSSSS..', '.cWcccSc.', '.cncccnc.', 'ccccccccc', '.cSSSSSc.'],
+    frames: [[[2, 2, 'w']], [[4, 2, 'w'], [3, 4, 'w']], [[6, 2, 'w'], [5, 4, 'w'], [4, 5, 'W']], [[2, 3, 'w'], [6, 3, 'w']]],
+  },
+  // Optical camouflage (Explore): searches unseen; turns to an outline, vanishes but for the eyes, comes back by halves.
+  'cyber-camuflaje': {
+    palette: CYBER_PALETTE, blinks: false,
+    rows: ['.........', '...NNN...', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[], [[0, 4, 'N'], [1, 2, 'N'], [1, 3, 'N'], [1, 4, '.'], [1, 5, 'N'], [2, 2, 'N'], [2, 3, 'n'], [2, 4, '.'], [2, 5, 'N'], [3, 2, 'N'], [3, 3, '.'], [3, 4, '.'], [3, 5, 'N'], [4, 2, 'N'], [4, 3, '.'], [4, 4, '.'], [4, 5, 'N'], [5, 2, 'N'], [5, 3, '.'], [5, 4, '.'], [5, 5, 'N'], [6, 2, 'N'], [6, 3, 'n'], [6, 4, '.'], [6, 5, 'N'], [7, 2, 'N'], [7, 3, 'N'], [7, 4, '.'], [7, 5, 'N'], [8, 4, 'N'], [1, 6, 'N'], [3, 6, 'N'], [5, 6, 'N'], [7, 6, 'N'], [1, 7, '.'], [3, 7, '.'], [5, 7, '.'], [7, 7, '.'], [3, 1, '.'], [4, 1, '.'], [5, 1, '.']], [[0, 4, '.'], [1, 2, '.'], [1, 3, '.'], [1, 4, '.'], [1, 5, '.'], [2, 2, '.'], [2, 3, 'n'], [2, 4, '.'], [2, 5, '.'], [3, 2, '.'], [3, 3, '.'], [3, 4, '.'], [3, 5, '.'], [4, 2, '.'], [4, 3, '.'], [4, 4, '.'], [4, 5, '.'], [5, 2, '.'], [5, 3, '.'], [5, 4, '.'], [5, 5, '.'], [6, 2, '.'], [6, 3, 'n'], [6, 4, '.'], [6, 5, '.'], [7, 2, '.'], [7, 3, '.'], [7, 4, '.'], [7, 5, '.'], [8, 4, '.'], [1, 6, '.'], [3, 6, '.'], [5, 6, '.'], [7, 6, '.'], [1, 7, '.'], [3, 7, '.'], [5, 7, '.'], [7, 7, '.'], [3, 1, '.'], [4, 1, '.'], [5, 1, '.']], [[5, 2, 'N'], [5, 3, '.'], [5, 4, '.'], [5, 5, 'N'], [6, 2, 'N'], [6, 3, 'n'], [6, 4, '.'], [6, 5, 'N'], [7, 2, 'N'], [7, 3, 'N'], [7, 4, '.'], [7, 5, 'N'], [8, 4, 'N'], [5, 6, 'N'], [7, 6, 'N'], [5, 7, '.'], [7, 7, '.'], [5, 1, '.']]],
+  },
+  // Servo skull (D5): floats with a red optic in the socket. Not a crew member: it takes the place of a
+  // failed agent in the cyberpunk style, and (R4) floats at the tip of the band. Eight rows: no legs added.
+  'cyber-calavera': {
+    palette: { ...CYBER_PALETTE, h: '#E8E2CF' }, blinks: false, walks: false,
+    rows: ['..hhhhh..', '.hhhhhhhs', '.hkkhrrh.', '.hkkhrrhS', '.hhhkhhhS', '..hkhkh..', '..SsSsS..', '...nNn...'],
+    frames: [[[6, 2, 'w']], [[5, 3, 'w'], [3, 7, 'N'], [4, 7, 'n'], [5, 7, 'N']], [[5, 2, 'w'], [6, 2, 'w'], [5, 3, 'w'], [6, 3, 'w']], []],
+  },
 }
 Object.assign(MINI_COSTUMES, CYBER_CREW)
 
@@ -992,6 +1016,7 @@ const CREWS: Record<Estilo, Record<string, string>> = {
   cyberpunk: {
     explorador: 'cyber-netrunner', ejecutor: 'cyber-brazo', revisor: 'cyber-cazador', consejero: 'cyber-oraculo',
     Plan: 'cyber-fixer', 'claude-code-guide': 'cyber-guia', 'general-purpose': 'cyber-samurai',
+    fork: 'cyber-cromo', Explore: 'cyber-camuflaje',
   },
 }
 // Module scope is fine here: session.start reads the file again on every (re)load.
@@ -1172,7 +1197,7 @@ const agentSvg = (W: number, a: AgentRun, at: number): string => {
   return svg(
     W,
     66,
-    `${rowCrab(W, 0, 14, runCostume(a), false, a.status === 'running')}
+    `${rowCrab(W, 0, 14, drawnCostume(a), false, a.status === 'running')}
 <text class="t" ${startText(W, 42, 18)} font-family="${FONT}" font-size="13" font-weight="600">${xml(fitText(a.description || a.type, 13, textW))}</text>
 <text ${startText(W, 42, 34)} font-family="${FONT}" font-size="11"><tspan fill="${color}">${xml(savvy === 'other' ? a.type : tierWord(savvy))}</tspan><tspan class="s">  ${xml(meta.join('  ·  '))}</tspan></text>
 ${steps && stepsW > 30 ? `<text class="t" ${startText(W, 42, 49)} font-family="${FONT}" font-size="11" font-variant-numeric="tabular-nums">${xml(fitText(steps, 11, stepsW))}</text>` : ''}
@@ -1203,7 +1228,7 @@ ${statusMark(mx(W, W - 8), 16, 'planned', color)}
 const compactSvg = (W: number, list: AgentRun[], planned: Planned[], t: ReturnType<typeof totals>): string => {
   const icons = [
     ...list.filter(a => a.status === 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: 'running', dim: false })),
-    ...list.filter(a => a.status !== 'running').map(a => ({ k: runCostume(a), c: colorOf(runTier(a)), s: a.status, dim: false })),
+    ...list.filter(a => a.status !== 'running').map(a => ({ k: drawnCostume(a), c: colorOf(runTier(a)), s: a.status, dim: false })),
     ...planned.map(p => ({ k: p.tier in TIER_COLOR ? p.tier : 'other', c: colorOf(p.tier), s: 'planned', dim: true })),
   ]
   const fit = Math.max(1, Math.floor((W - 150) / 36))
@@ -1633,7 +1658,7 @@ export const register: Register = (on, options) => {
           key={crabKey(a)}
           columns={size.columns}
           rows={size.rows}
-          cells={crabCells(runCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB, false, a.status === 'failed').cells}
+          cells={crabCells(drawnCostume(a), a.status === 'running' ? frame : null, size === ROW_CRAB, false, a.status === 'failed' && !isSkull(a)).cells}
         />
       )
     const row = (a: AgentRun) => {
