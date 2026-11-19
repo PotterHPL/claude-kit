@@ -59,7 +59,7 @@ A finished agent's steps read as complete (`3/3`), since an agent may end withou
 
 In the cyberpunk style a failed agent becomes `cyber-calavera`, a floating servo skull with a red optic, in place of the crouching crab.
 
-While agents work, the band above the prompt is two rows tall with an animated mascot at its end (drawn by hand at 9 × 4 pixels): the wizard in the classic style, the servo skull in cyberpunk (it replaces the crab on the desktop's band too). Set the `bandMascot` option to `off` for the one-row band; a window under 60 columns also leaves the mascot out. In cyberpunk the band's accents turn neon pink (cyan once finished) and braille rain falls on the part still to do.
+While agents work, the band above the prompt is two rows tall with an animated mascot at its end (drawn by hand at 9 × 4 pixels; it keeps moving as long as the band shows, agents running or not): the wizard in the classic style, the servo skull in cyberpunk (it replaces the crab on the desktop's band too). Set the `bandMascot` option to `off` for the one-row band; a window under 60 columns also leaves the mascot out. In cyberpunk the band's accents turn neon pink (cyan once finished) and braille rain falls on the part still to do.
 
 Every terminal crab blinks once every three seconds (a visor or an eyepatch stays open), and a failed agent's crab crouches with a drop of sweat. A finished one stands still. On the desktop the crew is the terminal costume at three times its size.
 

@@ -8,9 +8,9 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 ## Relevo
 - Avance: 3 de 4 rebanadas aceptadas (75 %).
 - R1 (PR #16), R2 (PR #17) y R3 (PR #18) aceptadas el 2026-11-19. En R3, JD vio el cromo, el camuflaje y la calavera.
-- R4 en revisión: barra de 2 líneas con un servocráneo y un mago nuevos de 9 × 4, animados (D11; JD vio grandes
-  las de 4 y 3 líneas) (`bandMascot`), acentos neón y lluvia en cyberpunk,
-  versión `1.3.0-conaltura.1`. 77 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` en los dos estilos.
+- R4 en revisión: barra de 2 líneas con un servocráneo y un mago nuevos de 9 × 4, animados todo el tiempo que
+  se ve la barra, haya o no agentes (D11; JD vio grandes las de 4 y 3 líneas, y la primera de 2 líneas «no se ve bien») (`bandMascot`), acentos neón y lluvia en cyberpunk,
+  versión `1.3.0-conaltura.1`. 79 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` en los dos estilos.
 - Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
 - Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.

@@ -477,12 +477,27 @@ const BAND_SPIN_KEY = 'band-spin'
 const BAND_MASCOT_KEY = 'band-mascot'
 const MASCOT_MIN_COLUMNS = 60
 let bandMascot = true
+// Whether the terminal band last drew the mascot: the clock repaints it only then.
+let mascotShown = false
 const mascotOf = (): string => (estilo === 'cyberpunk' ? 'cyber-calavera' : 'savvy-mago')
 // In the terminal the band's mascot is drawn by hand at four pixels tall, two rows (D11: JD found the 9 × 8
 // skull too big, then the 7 × 6 one; two rows it is). Halving a sprite would blur it, so these are new
 // drawings. The desktop keeps the full crab size.
 const BAND_MASCOT = { columns: 9, rows: 2 }
 type MascotMini = { rows: string[]; frames: [x: number, y: number, ch: string][][]; palette: Record<string, string> }
+// The servo skull's hover cycle, one FRAME_LOOP (twelve frames, 3 s): the fins flap between the two
+// rows every half second, so the motion shows at this size; the optic glints, the fins flash cyan (a
+// thrust), the teeth click shut and the optic dims (a blink).
+// A function, as mascotMini below: FRAME_LOOP is declared further down the module.
+const skullFrames = (): [x: number, y: number, ch: string][][] => Array.from({ length: FRAME_LOOP }, (_, k) => {
+  const isUp = Math.floor(k / 2) % 2 === 1
+  const fin = k === 6 || k === 7 ? 'n' : 's'
+  const out: [number, number, string][] = isUp ? [[0, 2, '.'], [8, 2, '.'], [0, 1, fin], [8, 1, fin]] : [[0, 2, fin], [8, 2, fin]]
+  if (k === 3 || k === 4) out.push([5, 1, 'w'])
+  if (k === 8) out.push([3, 3, 'h'], [5, 3, 'h'])
+  if (k === 10 || k === 11) out.push([5, 1, 'R'], [6, 1, 'R'])
+  return out
+})
 // A function, not a constant: the palettes it uses are declared further down the module.
 const mascotMini = (): Record<Estilo, MascotMini> => ({
   // The wizard: starred hat, staff with an orb; the orb glows, the star twinkles and it steps.
@@ -491,21 +506,19 @@ const mascotMini = (): Record<Estilo, MascotMini> => ({
     rows: ['...pZp...', '.Lppppp..', '.dckckc..', '.d.c.c...'],
     frames: [[], [[1, 1, 'Z']], [[1, 1, 'w'], [4, 0, 'y'], [3, 3, '.'], [4, 3, 'c']], [[1, 1, 'Z'], [5, 3, '.'], [6, 3, 'c']]],
   },
-  // The servo skull: cranium, a socket and the red optic, teeth, an antenna each side and the thruster.
-  // The optic flashes, the antennas twitch, a red beam scans out and the thruster flickers.
+  // The servo skull: a rounded cranium, a dark socket and the red optic, the nose, the teeth, and a
+  // stabilizer fin each side. It hovers: see skullFrames.
   cyberpunk: {
     palette: { ...CYBER_PALETTE, h: '#E8E2CF', R: '#8C1C1C' },
-    rows: ['..hhhhh..', '.Shkhrhs.', '..hkhkh..', '...nNn...'],
-    frames: [
-      [],
-      [[5, 1, 'w'], [1, 1, '.'], [1, 0, 'S'], [3, 3, 'N'], [4, 3, 'n'], [5, 3, 'N']],
-      [[8, 1, 'r'], [3, 3, '.'], [5, 3, '.']],
-      [[7, 1, '.'], [7, 0, 's'], [8, 1, 'R'], [8, 2, 'R']],
-    ],
+    rows: ['..hhhhh..', '.hkkhrrh.', 'shhhkhhhs', '..hkhkh..'],
+    frames: skullFrames(),
   },
 })
-const mascotCells = (frame: number | null): Cells => {
-  const m = mascotMini()[estilo]
+// The band mascot's cells for a frame, in a style (the current one by default). Exported for the tests:
+// the test engine applies a blit to what it mounted without going through the `ui.blit` hook, so the
+// animation is tested on the frames themselves.
+export const mascotCells = (frame: number | null, style: Estilo = estilo): Cells => {
+  const m = mascotMini()[style]
   const rows = m.rows.map(r => [...r])
   for (const [x, y, ch] of frame === null ? [] : (m.frames[frame % m.frames.length] ?? [])) {
     const row = rows[y]
@@ -1422,16 +1435,16 @@ export const register: Register = (on, options) => {
     // no redraw. Where none is mounted (the desktop, a closed panel) the blit is denied.
     $.clock.every(FRAME_MS, () => {
       void (async () => {
+        const ms = await $.clock.now()
+        // The band's mascot moves all the time it shows, agents running or not.
+        if (mascotShown && bandRequestId)
+          await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascotCells(frameAt(ms)) }).catch(() => undefined)
         const list = await read($, agents)
         const running = list.filter(a => a.status === 'running')
         if (!running.length) return
-        const ms = await $.clock.now()
         if (bandRequestId) {
           const { cells } = spinnerCells(Math.floor(ms / FRAME_MS) % SPIN_PATH.length)
           await $.ui.blit({ requestId: bandRequestId, key: BAND_SPIN_KEY, cells }).catch(() => undefined)
-          if (bandMascot) {
-            await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascotCells(frameAt(ms)) }).catch(() => undefined)
-          }
         }
         if (crabMode === 'off') return
         const k = frameAt(ms)
@@ -1886,7 +1899,10 @@ export const register: Register = (on, options) => {
     const batch = reported === null && options.band === 'any' ? currentBatch(list) : []
     const isBatch = batch.some(a => a.status === 'running')
     const f = reported ?? (isBatch ? batchFlow(batch, tr().pane) : null)
-    if (f === null || e.props.hasSurvey) return next(e)
+    if (f === null || e.props.hasSurvey) {
+      mascotShown = false
+      return next(e)
+    }
     // Draw this row with the other mods' bands beneath it. Claude Code's own placeholder ({ type: 'engine' }) is
     // never nested: the desktop drops a band that nests it.
     const drawn = await Promise.resolve(next(e)).catch(() => null)
@@ -1912,6 +1928,7 @@ export const register: Register = (on, options) => {
 
     // The terminal's element table is completed with an `Svg` that draws nothing: test the surface too.
     if (e.surface !== 'terminal' && 'Svg' in ui) {
+      mascotShown = false
       const { Svg } = ui
       // About 8 CSS px per reported column; the rest is the count, the dismiss
       // and their gaps. No floor above the slot: a row wider than it would wrap.
@@ -1936,6 +1953,7 @@ export const register: Register = (on, options) => {
       const { Raster } = ui
       const nowMs = await read($, now)
       const hasMascot = bandMascot && cols >= MASCOT_MIN_COLUMNS
+      mascotShown = hasMascot
       const trackW = Math.max(12, cols - titleW - 22 - (hasMascot ? BAND_MASCOT.columns + 1 : 0))
       const track = bandTrackCells(f, trackW, Math.floor(nowMs / 1000))
       bandRequestId = e.requestId
@@ -1955,7 +1973,7 @@ export const register: Register = (on, options) => {
           {!isBatch && dismiss}
         </Box>
       )
-      const mascot = mascotCells(isWorking ? frameAt(nowMs) : null)
+      const mascot = mascotCells(frameAt(nowMs))
       return (
         <Box flexDirection="column">
           {hasMascot ? (

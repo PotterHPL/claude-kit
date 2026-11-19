@@ -1,4 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
+import { mascotCells } from './register'
 import type { Engine } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
@@ -85,13 +86,15 @@ async function sesionEstilo($: Engine, on: On, estilo: 'clasico' | 'cyberpunk', 
   })
   on('settings.read', async () => ({ value: {} }) as never)
   on('session.start', async () => ({ cwd: '/repo' }) as never)
+  on('tool.register', () => ({ value: undefined }) as never)
+  on('command.register', () => ({ value: undefined }) as never)
   extra?.(on)
   await $.session.start({ source: 'startup', cwd: '/repo', surface: 'terminal', isInteractive: true } as never)
   await $.tool.call({ tool: 'mcp__savvy-progress__progress', title: 'Ship it', total: 4, done: 1, phase: 'delegate' } as never)
   return reloj
 }
 const montar = ($: Engine, surface: 'terminal' | 'desktop', bodyColumns = 100) =>
-  $.ui.mount({ plugin: 'savvy-progress', surface, component: 'AbovePrompt', props: { ...(BAND.props as object), bodyColumns } as never })
+  $.ui.mount({ plugin: 'savvy-progress', surface, component: 'AbovePrompt', requestId: 'banda', props: { ...(BAND.props as object), bodyColumns } as never })
 const braille = (t: string) => [...t].filter(c => c >= '\u2800' && c <= '\u28ff').length
 
 test('terminal: la barra lleva la mascota de 2 filas al final', async ($, on) => {
@@ -142,4 +145,17 @@ test('escritorio: la barra lleva la calavera en cyberpunk', async ($, on) => {
   const ui = await montar($, 'desktop')
   const svg = String((await ui.find({ type: 'Svg' }))?.props.source).toUpperCase()
   expect(svg).toContain('#E8E2CF')
+})
+
+test('el servocráneo cambia de cuadro: las aletas suben y bajan cada medio segundo', () => {
+  const cuadros = Array.from({ length: 12 }, (_, k) => mascotCells(k, 'cyberpunk').cells)
+  // Abajo (cuadros 0-1) y arriba (2-3): la diferencia se ve entre las dos líneas.
+  expect(cuadros[0]).not.toBe(cuadros[2])
+  // El ciclo de 3 s pasa por varios dibujos: aleteo, destello, impulso, dientes y parpadeo.
+  expect(new Set(cuadros).size).toBeGreaterThanOrEqual(6)
+})
+
+test('el mago también cambia de cuadro', () => {
+  const cuadros = Array.from({ length: 4 }, (_, k) => mascotCells(k, 'clasico').cells)
+  expect(new Set(cuadros).size).toBeGreaterThan(1)
 })
