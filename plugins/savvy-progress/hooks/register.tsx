@@ -765,7 +765,7 @@ const costumeOf = (type: string): string => (type === 'Explore' ? 'explore' : ti
 // so an agent that is not a savvy worker dresses for its model and effort.
 const runCostume = (a: AgentRun): string => {
   const type = a.type.replace(/^[^:]*:/, '')
-  const mapped = agentTiers.get(type) ?? CREWS[crew][type]
+  const mapped = agentTiers.get(type) ?? CREWS[estilo][type]
   if (mapped && Object.hasOwn(MINI_COSTUMES, mapped)) return mapped
   return a.type === 'Explore' ? 'explore' : runTier(a)
 }
@@ -868,63 +868,14 @@ const MINI_COSTUMES: Record<string, MiniCostume> = {
   explore: { rows: ['.K.KKK.K.', '.KKKKKKK.', '.ZZZZZZZ.', '.ckcckkc.', 'ccccccccs', '.ccccccc.'], frames: [[], [[8, 4, 'c'], [8, 3, 's']]] },
 }
 
-// Conaltura's crew (fork only): one costume per agent type of TI's method, each with a
-// four-frame work cycle. The `costumes` option maps the agent types to them.
-const OBRA_PALETTE: Record<string, string> = {
+// The savvy crew (fork only): the same agent types dressed in the line of the author's
+// costumes, each with its own four-frame work cycle.
+const SAVVY_PALETTE: Record<string, string> = {
   c: CLAY, k: INK, K: '#4A4A48', w: '#F8F6F1', W: '#CFD3D0', s: '#8E929A', d: '#7A4A26', D: '#5A3519',
   o: '#F08A24', O: '#C46A12', l: '#A1D81A', L: '#DBFF69', t: '#1B7489', T: '#125160',
   b: '#2F6FD0', B: '#9CC3F5', y: '#F5C542', Z: '#F5C542', r: '#E5483F', R: '#A6322C', m: '#FF795A', M: '#C9563C', p: '#B382FF',
+  e: '#D9C08C', E: '#B89B62', Y: '#C99A1E',
 }
-const OBRA: Record<string, MiniCostume> = {
-  // Surveyor (explorador): white hard hat, theodolite on a tripod that stands on the floor;
-  // looks into it, the laser lights, looks back.
-  'obra-topografo': {
-    palette: OBRA_PALETTE,
-    rows: ['..wwwww..', '.WWWWWWWy', '.cccccccs', '.ckccckcs', 'ccccccccs', '.cccccccs', '.c.c.c.cs', '.c.c.c.cs'],
-    frames: [[], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k'], [8, 1, 'r'], [8, 0, 'r']], [[8, 1, 'r']]],
-  },
-  // Worker (ejecutor): orange hard hat, lime vest; raises the hammer and strikes a spark off the floor.
-  'obra-obrero': {
-    palette: OBRA_PALETTE,
-    rows: ['..ooooo..', '.OOOoOOO.', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.lllllll.'],
-    frames: [[[0, 3, 'd'], [0, 2, 's']], [[0, 3, 'd'], [0, 2, 'd'], [0, 1, 's']], [[0, 5, 'd'], [0, 6, 's'], [0, 7, 'Z']], [[0, 5, 'd'], [0, 6, 's']]],
-  },
-  // Inspector (revisor): white hard hat with a petrol band; reads the clipboard and ticks it twice.
-  'obra-interventor': {
-    palette: OBRA_PALETTE,
-    rows: ['..wwwww..', '.TTTTTTT.', '.ccccccc.', '.ckccckcs', 'cccccccWW', '.ccccccWW'],
-    frames: [[], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k']], [[2, 3, 'c'], [3, 3, 'k'], [6, 3, 'c'], [7, 3, 'k'], [7, 4, 'l']], [[7, 4, 'l'], [8, 5, 'l']]],
-  },
-  // Architect (consejero): beret, round glasses, plans under the arm; takes them out, reads, tucks them back.
-  'obra-arquitecto': {
-    palette: OBRA_PALETTE,
-    rows: ['..kkkk...', '.kkkkkkk.', '.ccccccc.', '.WkWcWkW.', 'ccccccccb', '.cccccccB'],
-    frames: [[], [[8, 5, '.'], [8, 3, 'B']], [[8, 5, '.'], [8, 3, 'B'], [8, 2, 'b'], [2, 3, 'W'], [3, 3, 'k'], [6, 3, 'W'], [7, 3, 'k']], [[8, 5, '.'], [8, 3, 'B']]],
-  },
-  // Designer (Plan): petrol hard hat, pencil behind the ear, set square in hand; measures, takes the pencil, notes.
-  'obra-plan': {
-    palette: OBRA_PALETTE,
-    rows: ['..ttttt..', '.TTTTTTTy', 'pccccccck', 'pckccckc.', 'ccccccccc', '.ccccccc.'],
-    frames: [[], [[0, 2, '.'], [0, 5, 'p']], [[0, 2, '.'], [0, 5, 'p'], [8, 1, '.'], [8, 2, '.'], [8, 3, 'y'], [8, 4, 'k']], [[8, 1, '.'], [8, 2, '.'], [8, 3, 'y'], [8, 4, 'k']]],
-  },
-  // Guide (claude-code-guide): coral cap, pennant on a pole it holds; waves it side to side.
-  'obra-guia': {
-    palette: OBRA_PALETTE,
-    rows: ['..mmmm.ls', '.mmmmmMMs', '.cccccccs', '.ckccckcs', 'ccccccccs', '.ccccccc.'],
-    frames: [[], [[7, 0, 'L'], [6, 0, 'l']], [[7, 0, '.'], [6, 0, '.'], [8, 0, 'l']], [[7, 0, 'L'], [6, 0, 'l']]],
-  },
-  // Foreman (general-purpose): red hard hat with a stripe, moustache, radio in hand; looks at it, switches it on.
-  'obra-maestro': {
-    palette: OBRA_PALETTE,
-    rows: ['..rrwrr..', '.RRRRRRR.', 'sccccccc.', 'kckccckc.', 'kccDDDccc', '.ccccccc.'],
-    frames: [[], [[2, 3, 'c'], [1, 3, 'k'], [6, 3, 'c'], [5, 3, 'k']], [[0, 3, 'l'], [2, 3, 'c'], [1, 3, 'k'], [6, 3, 'c'], [5, 3, 'k']], [[0, 3, 'l']]],
-  },
-}
-Object.assign(MINI_COSTUMES, OBRA)
-
-// The savvy crew (fork only): the same agent types dressed in the line of the author's
-// costumes, each with its own four-frame work cycle.
-const SAVVY_PALETTE: Record<string, string> = { ...OBRA_PALETTE, e: '#D9C08C', E: '#B89B62', Y: '#C99A1E' }
 const SAVVY_CREW: Record<string, MiniCostume> = {
   // Safari explorer (explorador): pith helmet, binoculars; looks out, they glint, looks back.
   'savvy-safari': {
@@ -973,28 +924,88 @@ const SAVVY_CREW: Record<string, MiniCostume> = {
 }
 Object.assign(MINI_COSTUMES, SAVVY_CREW)
 
-// Which crew dresses the method's agent types: savvy (the default) or obra, switched by
-// `/cuadrilla` and kept across sessions in the store. The `costumes` option still wins.
-type Crew = 'savvy' | 'obra'
-const CREW_STORE_KEY = 'crew'
-const CREWS: Record<Crew, Record<string, string>> = {
-  savvy: {
+// The cyber crew (fork only, «Cuadrilla Neón»): the method's agent types in cyberpunk gear,
+// each with a four-frame work cycle. Rows and frames as approved in docs/diseno/cuadrilla-neon.html.
+const CYBER_PALETTE: Record<string, string> = {
+  c: CLAY, k: INK, w: '#F8F6F1', s: '#8E929A', S: '#5C606A', m: '#FF2E88', M: '#9E1257', n: '#00E5FF', N: '#0A7F96',
+  y: '#FCEE0A', g: '#39FF14', p: '#9D4EDD', P: '#4E1D80', r: '#FF3B3B', o: '#FF8A00',
+}
+const CYBER_CREW: Record<string, MiniCostume> = {
+  // Netrunner (explorador): hood and visor; a glint runs the visor and a packet goes down the cable.
+  'cyber-netrunner': {
+    palette: CYBER_PALETTE, blinks: false,
+    rows: ['..PPPPP..', '.PpppppP.', '.PcccccP.', '.cnnnnnc.', 'ccccccccN', '.cccccccN'],
+    frames: [[[2, 3, 'w']], [[4, 3, 'w'], [8, 4, 'n']], [[6, 3, 'w'], [8, 5, 'n']], [[8, 6, 'N'], [8, 5, 'n']]],
+  },
+  // Cyborg arm (ejecutor): pink crest, chrome arm; raises it and strikes a spark off the floor.
+  'cyber-brazo': {
+    palette: CYBER_PALETTE,
+    rows: ['....m....', '...mMm...', '.ccccccc.', '.ckccckc.', 'scccccccc', '.ccccccc.'],
+    frames: [[[0, 3, 's']], [[0, 2, 's'], [0, 3, 's'], [0, 4, '.']], [[0, 4, '.'], [0, 5, 's'], [0, 6, 'y'], [0, 7, 'o']], [[0, 5, 's']]],
+  },
+  // Glitch hunter (revisor): pink band, red monocle; scans with the reader, cyan then green.
+  'cyber-cazador': {
+    palette: CYBER_PALETTE, blinks: false,
+    rows: ['.........', '.mmmmmmm.', '.ccccccc.', '.ckcccrr.', 'ccccccccS', '.cccccccS'],
+    frames: [[], [[7, 3, 'w'], [8, 3, 'n']], [[8, 2, 'n'], [8, 3, 'n']], [[8, 4, 'g'], [8, 5, 'g']]],
+  },
+  // AI oracle (consejero): purple hood and robe; a hologram orb flickers above.
+  'cyber-oraculo': {
+    palette: CYBER_PALETTE,
+    rows: ['....n....', '.PPPPPPP.', 'PcccccccP', 'PckccckcP', 'ccccccccc', '.ppppppp.'],
+    frames: [[], [[4, 0, 'w'], [3, 0, 'N'], [5, 0, 'N']], [[4, 0, '.']], [[4, 0, 'N']]],
+  },
+  // Fixer (Plan): dark shades; opens a cyan holomap and the shades glint.
+  'cyber-fixer': {
+    palette: CYBER_PALETTE, blinks: false,
+    rows: ['.........', '..kkkkk..', '.ccccccc.', '.kkkckkk.', 'ccccccccN', '.cccccccN'],
+    frames: [[], [[8, 3, 'n']], [[8, 2, 'n'], [8, 3, 'n'], [2, 3, 'y']], [[8, 3, 'n'], [8, 4, 'n']]],
+  },
+  // Neon guide (claude-code-guide): cyan cap, a neon sign on a pole; it flickers and sparks.
+  'cyber-guia': {
+    palette: CYBER_PALETTE,
+    rows: ['......mmm', '..nnnnn.s', '.NNNNNNNs', '.ckccckcs', 'ccccccccs', '.ccccccc.'],
+    frames: [[], [[6, 0, 'M'], [7, 0, 'M'], [8, 0, 'M']], [], [[6, 0, 'w']]],
+  },
+  // Neon samurai (general-purpose): topknot, pink sash, light katana; it gleams, slashes, rests.
+  'cyber-samurai': {
+    palette: CYBER_PALETTE,
+    rows: ['....k....', '..kkkkk..', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.cmmmmmc.'],
+    frames: [[[8, 1, 'n'], [8, 2, 'n'], [8, 3, 'n']], [[8, 0, 'w'], [8, 1, 'n'], [8, 2, 'n'], [8, 3, 'n']], [[6, 0, 'n'], [7, 1, 'n'], [8, 2, 'w']], [[8, 3, 'n']]],
+  },
+}
+Object.assign(MINI_COSTUMES, CYBER_CREW)
+
+// The style that dresses the method's agent types: classic (savvy crew) or cyberpunk (cyber
+// crew). `/estilo` writes it to ~/.claude/estilo-cierre.txt, the same file the closing template
+// and the status line read; anything else there, or no file, is classic. The `costumes` option
+// still wins over the crew.
+type Estilo = 'clasico' | 'cyberpunk'
+const ESTILO_MS = 2000
+const CREWS: Record<Estilo, Record<string, string>> = {
+  clasico: {
     explorador: 'savvy-safari', ejecutor: 'savvy-robot', revisor: 'savvy-juez', consejero: 'savvy-mago',
     Plan: 'savvy-capitan', 'claude-code-guide': 'savvy-profesor', 'general-purpose': 'savvy-heroe',
   },
-  obra: {
-    explorador: 'obra-topografo', ejecutor: 'obra-obrero', revisor: 'obra-interventor', consejero: 'obra-arquitecto',
-    Plan: 'obra-plan', 'claude-code-guide': 'obra-guia', 'general-purpose': 'obra-maestro',
+  cyberpunk: {
+    explorador: 'cyber-netrunner', ejecutor: 'cyber-brazo', revisor: 'cyber-cazador', consejero: 'cyber-oraculo',
+    Plan: 'cyber-fixer', 'claude-code-guide': 'cyber-guia', 'general-purpose': 'cyber-samurai',
   },
 }
-// Module scope is fine here: session.start reads it from the store again on every (re)load.
-let crew: Crew = 'savvy'
-const crewOf = (v: unknown): Crew | null => (v === 'savvy' || v === 'obra' ? v : null)
+// Module scope is fine here: session.start reads the file again on every (re)load.
+let estilo: Estilo = 'clasico'
+const estiloOf = (v: unknown): Estilo => (typeof v === 'string' && v.trim().toLowerCase() === 'cyberpunk' ? 'cyberpunk' : 'clasico')
+const leerEstilo = async ($: EngineInterface): Promise<Estilo> => {
+  const home = (await $.env.get('USERPROFILE').catch(() => undefined)) || (await $.env.get('HOME').catch(() => undefined))
+  if (!home) return 'clasico'
+  const texto = await $.fs.read(`${home.replace(/\\/g, '/')}/.claude/estilo-cierre.txt`).catch(() => null)
+  return estiloOf(texto)
+}
 
 // On the desktop the crew is the mini costume at three times its size, its legs in the
 // walk's two groups (`la`, `lb`) so the desktop's CSS walks them as the other crabs.
-const OBRA_SCALE = 3
-for (const [id, c] of [...Object.entries(OBRA), ...Object.entries(SAVVY_CREW)]) {
+const CREW_SCALE = 3
+for (const [id, c] of [...Object.entries(SAVVY_CREW), ...Object.entries(CYBER_CREW)]) {
   COSTUMES[id] = f => {
     const rows = [...c.rows]
     if (rows.length === MINI_BODY.length + 2) rows.push(MINI_LEGS, MINI_LEGS)
@@ -1005,7 +1016,7 @@ for (const [id, c] of [...Object.entries(OBRA), ...Object.entries(SAVVY_CREW)]) 
         if (!color) return
         const isLeg = y >= rows.length - 2 && ch === 'c'
         const cls = isLeg ? (x === 1 || x === 5 ? 'la' : 'lb') : 'bd'
-        f(1 + x * OBRA_SCALE, 4 + y * OBRA_SCALE, OBRA_SCALE, OBRA_SCALE, color, cls)
+        f(1 + x * CREW_SCALE, 4 + y * CREW_SCALE, CREW_SCALE, CREW_SCALE, color, cls)
       }),
     )
   }
@@ -1246,7 +1257,7 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const started = await next(e)
     lang = await detectLang($, options.language)
-    crew = crewOf(await $.store.get(CREW_STORE_KEY).catch(() => null)) ?? 'savvy'
+    estilo = await leerEstilo($)
     await $.tool.register({
       name: 'progress',
       description:
@@ -1298,14 +1309,20 @@ export const register: Register = (on, options) => {
       isDeferred: false,
     })
     await $.command.register({
-      name: 'cuadrilla',
-      description: 'Switch the crew that dresses the agents: savvy (the default) or obra; with no argument, say which is on',
-    })
-    await $.command.register({
       name: 'agents-info',
       description: 'Show or hide the panel of subagents: running, finished and planned, with model, context, cost and time',
     })
 
+    // Rereads the style `/estilo` writes; a change redraws the panel and the band.
+    $.clock.every(ESTILO_MS, () => {
+      void (async () => {
+        const leido = await leerEstilo($)
+        if (leido === estilo) return
+        estilo = leido
+        const at = await $.clock.now()
+        await update($, now, () => at)
+      })()
+    })
     // Ticks the running agents' clocks; quiet when nothing runs.
     $.clock.every(1000, () => {
       void (async () => {
@@ -1336,17 +1353,6 @@ export const register: Register = (on, options) => {
       })()
     })
     return started
-  })
-
-  on('command.run', { command: 'cuadrilla' }, async ($, e) => {
-    const asked = crewOf((e.args ?? '').trim().toLowerCase())
-    if (!asked) return { text: `Cuadrilla: ${crew}. Cambia con /cuadrilla savvy o /cuadrilla obra.` }
-    crew = asked
-    await $.store.set(CREW_STORE_KEY, asked)
-    // Redraw the panel and the band with the new crew.
-    const at = await $.clock.now()
-    await update($, now, () => at)
-    return { text: `Cuadrilla: ${asked}.` }
   })
 
   on('command.run', { command: 'agents-info' }, async ($, e) => {

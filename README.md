@@ -1,6 +1,6 @@
 # claude-kit (fork de TI Conaltura)
 
-> **Conaltura:** este fork trae los dos mods del estándar de TI: `savvy-progress` (con la cuadrilla de obra, la barra de
+> **Conaltura:** este fork trae los dos mods del estándar de TI: `savvy-progress` (con las cuadrillas savvy y cyber según `/estilo`, la barra de
 > cada tanda de agentes y el panel en español) y `next-steps`. Se instalan desde un solo marketplace:
 >
 > ```

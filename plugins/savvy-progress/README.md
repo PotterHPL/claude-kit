@@ -34,27 +34,26 @@ Install instructions are in the [repository README](../../README.md).
 
 ## Conaltura fork
 
-This fork dresses the agent types of TI's method with one of two crews, switched by `/cuadrilla`:
+This fork dresses the agent types of TI's method with one of two crews, chosen by the style that `/estilo` writes to `~/.claude/estilo-cierre.txt` (`clasico` or `cyberpunk`; no file, or anything else, is classic). The mod rereads the file every two seconds, so a change shows without restarting.
 
-- **`/cuadrilla savvy`** (the default): characters in the line of the author's costumes. `explorador` is a safari explorer, `ejecutor` a robot, `revisor` a judge, `consejero` a wizard, `Plan` a captain, `claude-code-guide` a professor and `general-purpose` a superhero.
-- **`/cuadrilla obra`**: the construction crew below.
+- **Classic** (the default): the savvy crew, characters in the line of the author's costumes. `explorador` is a safari explorer, `ejecutor` a robot, `revisor` a judge, `consejero` a wizard, `Plan` a captain, `claude-code-guide` a professor and `general-purpose` a superhero.
+- **Cyberpunk**: the cyber crew below («Cuadrilla Neón», plan in `docs/plan.md`).
 
-`/cuadrilla` with no argument says which crew is on; the choice is kept across sessions. The `costumes` option still wins over the crew. Any other agent dresses as before: its savvy tier, `Explore` as the pirate, or its model and effort.
+The `costumes` option still wins over the crew. Any other agent dresses as before: its savvy tier, `Explore` as the pirate, or its model and effort.
 
 A finished agent's steps read as complete (`3/3`), since an agent may end without reporting its last step.
 
-### The construction crew
-
+### The cyber crew
 
 | Agent type | Costume | Work cycle (4 frames) |
 |---|---|---|
-| `explorador` | `obra-topografo`: surveyor, theodolite on a tripod | looks into it, the laser lights |
-| `ejecutor` | `obra-obrero`: worker, orange hard hat, lime vest | raises the hammer, strikes a spark |
-| `revisor` | `obra-interventor`: inspector with a clipboard | reads it, ticks it twice |
-| `consejero` | `obra-arquitecto`: architect, beret, round glasses | takes out the plans, reads, tucks them back |
-| `Plan` | `obra-plan`: designer, set square, pencil behind the ear | measures, takes the pencil, notes |
-| `claude-code-guide` | `obra-guia`: guide with a pennant | waves it side to side |
-| `general-purpose` | `obra-maestro`: foreman, moustache, radio | looks at it, switches it on |
+| `explorador` | `cyber-netrunner`: hood and visor | a glint runs the visor, a packet goes down the cable |
+| `ejecutor` | `cyber-brazo`: pink crest, chrome arm | raises the arm, strikes a spark off the floor |
+| `revisor` | `cyber-cazador`: glitch hunter, red monocle | scans with the reader, cyan then green |
+| `consejero` | `cyber-oraculo`: AI oracle, purple hood | a hologram orb flickers above |
+| `Plan` | `cyber-fixer`: dark shades | opens a cyan holomap, the shades glint |
+| `claude-code-guide` | `cyber-guia`: neon guide, a sign on a pole | the neon flickers and sparks |
+| `general-purpose` | `cyber-samurai`: topknot, pink sash, light katana | the blade gleams, slashes, rests |
 
 Every terminal crab blinks once every three seconds (a visor or an eyepatch stays open), and a failed agent's crab crouches with a drop of sweat. A finished one stands still. On the desktop the crew is the terminal costume at three times its size.
 

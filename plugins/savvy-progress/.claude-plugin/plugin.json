@@ -66,7 +66,7 @@
     "costumes": {
       "type": "string",
       "title": "Costume per agent type",
-      "description": "type=costume pairs, comma-separated (for example explorador=explore,revisor=heavy): the costume an agent type wears, ahead of the crew (/cuadrilla savvy | obra) and of the rule (savvy tier, Explore as the pirate, or model and effort)",
+      "description": "type=costume pairs, comma-separated (for example explorador=explore,revisor=heavy): the costume an agent type wears, ahead of the crew (savvy in the classic style, cyber in cyberpunk; /estilo picks it) and of the rule (savvy tier, Explore as the pirate, or model and effort)",
       "default": ""
     }
   },
