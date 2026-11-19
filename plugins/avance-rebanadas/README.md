@@ -4,7 +4,7 @@ Mod de Claude Code de TI Conaltura. Pone encima del prompt la barra de avance de
 
 ```
 mcp-proyectos-dwh  ■■■■■□  5/6 aceptadas (83 %)                                ×
-Siguiente: R6 · La guía para Financiera y Gerencia y el .mcpb 1.0.0 instalado…
+⚙ Trabajando en R6 · Corriendo las pruebas del instalador
 ```
 
 - Un segmento por rebanada: morado = `aceptada`, magenta = `en revisión`, cyan = `en curso`, gris (□) = `pendiente` (paleta Netrun, la del Neovim).
@@ -14,6 +14,21 @@ Siguiente: R6 · La guía para Financiera y Gerencia y el .mcpb 1.0.0 instalado�
 - Vuelve a leer el plan cada 3 segundos: al marcar una rebanada como aceptada, la barra cambia sola y sale el aviso
   «✔ R6 aceptada · 6/6 (100 %)».
 - Con todas aceptadas, la barra entera pasa a amarillo neón y dice «lista para entregar».
+
+## La segunda línea: de quién es el turno
+
+Gana la de más arriba:
+
+| Cuándo | Qué dice | Color |
+|---|---|---|
+| Una rebanada está `en revisión` | `● Te toca: ver R3 · <qué verás>` (con `(+1)` si hay más) | magenta |
+| Una rebanada está `en curso` | `⚙ Trabajando en R3 · <tarea>` | cyan |
+| Nada en revisión ni en curso | `○ Sigue: R4 · <qué verás> · di «adelante»` | gris |
+| Todas aceptadas | `Todas las rebanadas aceptadas · lista para entregar` | amarillo neón |
+
+La **tarea** sale de lo que hace el agente en la sesión, en este orden: la tarea en curso de su lista (`TodoWrite`,
+`TaskUpdate`), la descripción del último comando (`Bash`) o el archivo que editó («Editando render.py»). Sin nada de
+eso, va el «qué verás» de la rebanada.
 
 ## De qué proyecto
 
@@ -28,8 +43,8 @@ Siguiente: R6 · La guía para Financiera y Gerencia y el .mcpb 1.0.0 instalado�
 ## Qué toca
 
 Solo lee archivos (`$.fs.read`, `$.fs.exists`: `docs/plan.md`, fichas de la wiki y `AGENTS.md`) y la carpeta de la
-sesión. Observa las llamadas a herramientas (`tool.call`) solo para saber qué archivo se tocó: siempre las entrega
-intactas con `next(e)`, sin aprobar ni negar nada. No sale a la red, no ejecuta procesos ni escribe archivos.
+sesión. Observa las llamadas a herramientas (`tool.call`) solo para saber qué archivo se tocó y qué tarea hace el agente:
+siempre las entrega intactas con `next(e)`, sin aprobar ni negar nada. No sale a la red, no ejecuta procesos ni escribe archivos.
 
 ## Pruebas
 

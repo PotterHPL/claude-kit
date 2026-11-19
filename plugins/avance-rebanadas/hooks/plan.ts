@@ -1,7 +1,7 @@
 // Lectura del avance desde la tabla `## Rebanadas` de un docs/plan.md (ciclo v3 de TI, ADR-0033).
 // Sin dependencias del motor: se prueba con texto.
 
-import type { Avance, Estado, Rebanada } from '../types'
+import type { Avance, Estado, Rebanada, Turno } from '../types'
 
 // Minúsculas, sin tildes, sin negritas ni código, espacios simples.
 export const normalizar = (texto: string): string =>
@@ -79,6 +79,44 @@ export const leerAvance = (texto: string): Avance | null => {
 
 export const siguiente = (avance: Avance): Rebanada | null =>
   avance.rebanadas.find(r => r.estado !== 'aceptada') ?? null
+
+// De quién es el turno. Gana lo que espera por JD; después, lo que se construye; después, lo que sigue.
+export const turno = (avance: Avance): Turno => {
+  const en = (estado: Estado) => avance.rebanadas.filter(r => r.estado === estado)
+  const revision = en('en revisión')
+  const [primeraRevision] = revision
+  if (primeraRevision) return { tipo: 'te-toca', rebanada: primeraRevision, mas: revision.length - 1 }
+  const curso = en('en curso')
+  const [primeraCurso] = curso
+  if (primeraCurso) return { tipo: 'trabajando', rebanada: primeraCurso, mas: curso.length - 1 }
+  const pendiente = siguiente(avance)
+  return pendiente ? { tipo: 'sigue', rebanada: pendiente } : { tipo: 'lista' }
+}
+
+// La segunda línea: un título con color (según el turno) y un detalle.
+export type Linea = { titulo: string; detalle: string; tono: 'revision' | 'curso' | 'sigue' | 'lista' }
+
+export const lineaDelTurno = (t: Turno, tarea: string | null): Linea => {
+  if (t.tipo === 'lista') return { titulo: 'Todas las rebanadas aceptadas · lista para entregar', detalle: '', tono: 'lista' }
+  const mas = 'mas' in t && t.mas > 0 ? ` (+${t.mas})` : ''
+  const que = t.rebanada.queVeras
+  if (t.tipo === 'te-toca') return { titulo: `● Te toca: ver ${t.rebanada.id}${mas}`, detalle: que ? `· ${que}` : '', tono: 'revision' }
+  if (t.tipo === 'trabajando') {
+    const detalle = tarea ?? que
+    return { titulo: `⚙ Trabajando en ${t.rebanada.id}${mas}`, detalle: detalle ? `· ${detalle}` : '', tono: 'curso' }
+  }
+  return { titulo: `○ Sigue: ${t.rebanada.id}`, detalle: `${que ? `· ${que} ` : ''}· di «adelante»`, tono: 'sigue' }
+}
+
+// La tarea en curso de una lista TodoWrite: su frase en gerundio («Corriendo las pruebas»).
+export const tareaEnCurso = (todos: unknown): string | null => {
+  if (!Array.isArray(todos)) return null
+  const t = todos.find(x => (x as { status?: unknown })?.status === 'in_progress') as
+    | { activeForm?: unknown; content?: unknown }
+    | undefined
+  const frase = t?.activeForm ?? t?.content
+  return typeof frase === 'string' && frase.trim() !== '' ? frase.trim() : null
+}
 
 // Las rebanadas que pasaron a `aceptada` entre dos lecturas del mismo plan. Sin lectura anterior: ninguna.
 export const recienAceptadas = (antes: Avance | null, despues: Avance | null): Rebanada[] => {

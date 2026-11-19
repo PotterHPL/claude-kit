@@ -62,7 +62,8 @@ test('en la carpeta del proyecto la barra muestra 5/6 y la siguiente, en termina
     const t = await textos($, surface)
     expect(t).toContain('mcp-x')
     expect(t).toContain('5/6 aceptadas (83 %)')
-    expect(t).toContain('Siguiente: R6 · Pantalla 6')
+    expect(t).toContain('○ Sigue: R6')
+    expect(t).toContain('· Pantalla 6 · di «adelante»')
     expect(t.filter(x => x === '■').length).toBe(5)
     expect(t.filter(x => x === '□').length).toBe(1)
   }
@@ -105,7 +106,8 @@ test('al cambiar un estado en el plan la barra cambia en la siguiente relectura'
   archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada', 'en curso']))
   await reloj.advance(3000)
   const t = await textos($, 'terminal')
-  expect(t).toContain('Siguiente: R6 (en curso) · Pantalla 6')
+  expect(t).toContain('⚙ Trabajando en R6')
+  expect(t).toContain('· Pantalla 6')
   archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada', 'aceptada']))
   await reloj.advance(3000)
   expect(await textos($, 'terminal')).toContain('6/6 aceptadas (100 %)')
@@ -162,4 +164,40 @@ test('al 100 % dice «lista para entregar»', async ($, on) => {
   const t = await textos($, 'terminal')
   expect(t).toContain('2/2 aceptadas (100 %)')
   expect(t).toContain('Todas las rebanadas aceptadas · lista para entregar')
+})
+
+const herramienta = ($: Engine, entrada: Record<string, unknown>) => $.tool.call(entrada as never)
+
+test('trabajando: la tarea sale de la lista del agente, o del último comando, o del archivo que edita', async ($, on) => {
+  const archivos = disco()
+  archivos.set(PLAN_MCP, plan(['aceptada', 'aceptada', 'en curso', 'pendiente']))
+  await sesion($, on, 'C:/TI/10-proyectos/mcps/mcp-x', archivos)
+  expect(await textos($, 'terminal')).toContain('· Pantalla 3')
+
+  await herramienta($, { tool: 'Edit', file_path: 'C:/TI/10-proyectos/mcps/mcp-x/src/inicio.py', old_string: 'a', new_string: 'b' })
+  expect(await textos($, 'terminal')).toContain('· Editando inicio.py')
+
+  await herramienta($, { tool: 'Bash', command: 'pytest -q', description: 'Correr las pruebas del cálculo' })
+  expect(await textos($, 'terminal')).toContain('· Correr las pruebas del cálculo')
+
+  await herramienta($, {
+    tool: 'TodoWrite',
+    todos: [
+      { content: 'Escribir la consulta', status: 'completed', activeForm: 'Escribiendo la consulta' },
+      { content: 'Revisar los cálculos', status: 'in_progress', activeForm: 'Revisando que los cálculos den bien' },
+    ],
+  })
+  const t = await textos($, 'terminal')
+  expect(t).toContain('⚙ Trabajando en R3')
+  expect(t).toContain('· Revisando que los cálculos den bien')
+})
+
+test('te toca: lo que espera por ti va primero, aunque otra esté en curso', async ($, on) => {
+  const archivos = disco()
+  archivos.set(PLAN_MCP, plan(['aceptada', 'en curso', 'en revisión', 'en revisión']))
+  await sesion($, on, 'C:/TI/10-proyectos/mcps/mcp-x', archivos)
+  const t = await textos($, 'terminal')
+  expect(t).toContain('● Te toca: ver R3 (+1)')
+  expect(t).toContain('· Pantalla 3')
+  expect(t.some(x => x.includes('Trabajando'))).toBe(false)
 })

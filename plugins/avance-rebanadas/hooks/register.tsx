@@ -5,14 +5,17 @@ import type { Avance, Estado, Proyecto } from '../types'
 import {
   leerAvance,
   leerRutaLocal,
+  lineaDelTurno,
   nombre,
   padre,
   porcentaje,
   recienAceptadas,
   rutaAbsoluta,
-  siguiente,
+  tareaEnCurso,
+  turno,
   unir,
 } from './plan'
+import type { Linea } from './plan'
 
 // Herramientas cuyo archivo dice en qué proyecto se está trabajando.
 const HERRAMIENTAS_CON_RUTA = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'NotebookEdit']
@@ -35,6 +38,44 @@ const proyecto = atom({ plugin: 'avance-rebanadas', key: 'proyecto' } as const, 
 const avance = atom({ plugin: 'avance-rebanadas', key: 'avance' } as const, null as Avance | null)
 // Cerrada con × o con `/avance`: oculta hasta que se vuelva a pedir.
 const oculto = atom({ plugin: 'avance-rebanadas', key: 'oculto' } as const, false)
+// Qué está haciendo el agente: la tarea en curso de su lista y, si no hay, lo último que hizo.
+const tarea = atom({ plugin: 'avance-rebanadas', key: 'tarea' } as const, null as string | null)
+const accion = atom({ plugin: 'avance-rebanadas', key: 'accion' } as const, null as string | null)
+
+// Herramientas que editan: «Editando <archivo>» cuando no hay otra pista de la tarea.
+const HERRAMIENTAS_QUE_EDITAN = ['Edit', 'Write', 'NotebookEdit']
+
+const TONO: Record<Linea['tono'], string | undefined> = {
+  revision: '#ee5396',
+  curso: '#3ddbd9',
+  sigue: undefined,
+  lista: COMPLETA,
+}
+
+// Lo que el agente acaba de hacer, leído de la llamada a la herramienta (sin cambiarla).
+const anotarTarea = async ($: EngineInterface, herramienta: string, entrada: Record<string, unknown>) => {
+  if (herramienta === 'TodoWrite') {
+    await update($, tarea, () => tareaEnCurso(entrada.todos))
+    return
+  }
+  if (herramienta === 'TaskUpdate' || herramienta === 'TaskCreate') {
+    const frase = [entrada.activeForm, entrada.subject].find(v => typeof v === 'string' && v.trim() !== '') as
+      | string
+      | undefined
+    if (entrada.status === 'in_progress' && frase) await update($, tarea, () => frase.trim())
+    else if (entrada.status === 'completed' || entrada.status === 'deleted') await update($, tarea, () => null)
+    return
+  }
+  if (herramienta === 'Bash' && typeof entrada.description === 'string' && entrada.description.trim() !== '') {
+    const frase = entrada.description.trim()
+    await update($, accion, () => frase)
+    return
+  }
+  const archivo = [entrada.file_path, entrada.notebook_path].find(v => typeof v === 'string' && v !== '')
+  if (HERRAMIENTAS_QUE_EDITAN.includes(herramienta) && typeof archivo === 'string') {
+    await update($, accion, () => `Editando ${nombre(archivo)}`)
+  }
+}
 
 // Sube desde `desde` hasta encontrar una carpeta para la que `cumple` responde true.
 const subir = async (desde: string, cumple: (dir: string) => Promise<boolean>) => {
@@ -184,6 +225,7 @@ export const register: Register = on => {
   // Solo observa: siempre entrega la llamada intacta y mira el archivo después.
   on('tool.call', async ($, e, next) => {
     const result = await next(e)
+    await anotarTarea($, e.tool, e as unknown as Record<string, unknown>).catch(() => undefined)
     if (HERRAMIENTAS_CON_RUTA.includes(e.tool)) {
       const campos = e as unknown as { file_path?: unknown; path?: unknown; notebook_path?: unknown }
       const ruta = [campos.file_path, campos.path, campos.notebook_path].find(v => typeof v === 'string' && v !== '')
@@ -198,14 +240,11 @@ export const register: Register = on => {
     if (e.props.hasSurvey || p === null || a === null || (await read($, oculto))) return next(e)
 
     const { Box, Button, Text } = $.ui.resolve(e)
-    const sig = siguiente(a)
-    const completa = sig === null
+    const t = turno(a)
+    const completa = t.tipo === 'lista'
     const angosto = e.props.bodyColumns < 60
     const cuenta = angosto ? `${a.aceptadas}/${a.total}` : `${a.aceptadas}/${a.total} aceptadas (${porcentaje(a)} %)`
-    const detalle =
-      completa
-        ? 'Todas las rebanadas aceptadas · lista para entregar'
-        : `Siguiente: ${sig.id}${sig.estado === 'pendiente' ? '' : ` (${sig.estado})`}${sig.queVeras ? ` · ${sig.queVeras}` : ''}`
+    const linea = lineaDelTurno(t, (await read($, tarea)) ?? (await read($, accion)))
 
     return (
       <Box flexDirection="column" paddingX={1}>
@@ -220,11 +259,21 @@ export const register: Register = on => {
           <Box flexGrow={1} flexShrink={1} />
           <Button key="ocultar" label="×" role="dismiss" plain dimColor onPress={() => update($, oculto, () => true)} />
         </Box>
-        {completa ? (
-          <Text bold color={COMPLETA} wrap="truncate-end">{detalle}</Text>
-        ) : (
-          <Text dimColor wrap="truncate-end">{detalle}</Text>
-        )}
+        <Box flexDirection="row" columnGap={1} flexWrap="nowrap" overflow="hidden">
+          {/* El título no se encoge: si falta espacio, se corta el detalle. */}
+          <Box flexShrink={0}>
+            <Text bold color={TONO[linea.tono]} dimColor={linea.tono === 'sigue'}>
+              {linea.titulo}
+            </Text>
+          </Box>
+          {linea.detalle ? (
+            <Box flexShrink={1} overflow="hidden">
+              <Text dimColor={linea.tono !== 'curso'} wrap="truncate-end">
+                {linea.detalle}
+              </Text>
+            </Box>
+          ) : null}
+        </Box>
       </Box>
     )
   })
