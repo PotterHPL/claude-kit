@@ -30,7 +30,7 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 |---|---|---|---|---|---|
 | R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | aceptada |
 | R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | aceptada |
-| R3 | La segunda línea dice de quién es el turno: «Te toca: ver R3» primero, «Trabajando en R3 · <tarea>» con la tarea del agente, «Sigue: R4 · di adelante» y «lista para entregar» (v0.3.0) | `feat/avance-rebanadas-r3` | Claude | R2 | en revisión |
+| R3 | La segunda línea dice de quién es el turno | `feat/avance-rebanadas-r3` | Claude | R2 | en revisión |
 
 **Archivos compartidos y su dueño:**
 - `.claude-plugin/marketplace.json` y `README.md` de la raíz → R1. R2 solo sube la versión.
