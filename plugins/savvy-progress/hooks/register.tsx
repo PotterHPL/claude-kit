@@ -1321,7 +1321,7 @@ export const register: Register = (on, options) => {
         estilo = leido
         const at = await $.clock.now()
         await update($, now, () => at)
-      })()
+      })().catch(() => undefined)
     })
     // Ticks the running agents' clocks; quiet when nothing runs.
     $.clock.every(1000, () => {
