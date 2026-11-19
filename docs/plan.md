@@ -1,145 +1,168 @@
-# Plan: barra de avance por rebanadas aceptadas
+# Plan: Cuadrilla Neón (estilo clásico o cyberpunk en el panel de agentes)
 
-Mod nuevo `avance-rebanadas` en el fork `PotterHPL/claude-kit` (rama `conaltura`, marketplace `claude-kit-conaltura`).
-Origen: IDEA #1 del borrador de JD (`Desktop/Ideas/Metodologia IA.md:120`, «un mod de Claude que sea una barra que me
-diga en tiempo real el porcentaje en el que va») y D5 del ADR-0033 (el avance se mide en rebanadas aceptadas). Regla
-de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marketplace). El plan anterior de este repo
-(mascotas de Savvy Progress) está en `docs/plan-savvy-progress.md`.
+Rediseño de `plugins/savvy-progress` en el fork `PotterHPL/claude-kit` (rama `conaltura`, marketplace
+`claude-kit-conaltura`). Ficha: `50-conocimiento/proyectos/savvy-progress-conaltura.md` en el repo TI. Regla de mods:
+ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI). Planes anteriores de este repo:
+`docs/plan-savvy-progress.md` (mascotas) y `docs/plan-avance-rebanadas.md` (barra de avance).
 
 ## Relevo
-- Avance: 3 de 3 rebanadas aceptadas (100 %). R3 aceptada por JD (2026-11-18, PR #15): la segunda línea por turnos,
-  v0.3.0. Proyecto cerrado otra vez.
+- Avance: 0 de 4 rebanadas aceptadas (0 %).
+- Plan aprobado por JD el 2026-11-19 (`ti-plan`); siguiente: rebanada 1.
+- Maqueta aprobada (fuente de todos los sprites, filas y cuadros): `docs/diseno/cuadrilla-neon.html`; publicada en
+  https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
+- Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
+
+## Decisiones (JD, 2026-11-18 y 2026-11-19)
+- **D1** · En el estilo cyberpunk cambian los trajes, la barra y el panel. El clásico conserva su barra y su panel.
+- **D2** · La cuadrilla `obra` se borra (queda en el historial de git).
+- **D3-D4** · Cyberpunk tiene una sola cuadrilla, cyber-cangrejo. `/cuadrilla` sale del mod: la cuadrilla la decide
+  `/estilo` (clásico → savvy, cyberpunk → cyber-cangrejo).
+- **D5** · Cyberpunk: la calavera servo flota en la barra y reemplaza al cangrejo de un agente que falla.
+- **D6** · Clásico: el árbitro reemplaza al juez (revisor) y el farero al profesor (claude-code-guide).
+- **D7** · Clásico por frecuencia: astronauta en general-purpose, pirata en explorador, superhéroe en fork, safari en
+  Explore.
+- **D8** · Cyberpunk: cangrejo de cromo en fork, camuflaje óptico en Explore.
+- **D9** · Clásico: el mago camina en la barra y sigue vistiendo al consejero.
+- **D10** · En la terminal, la barra crece a 4 líneas con su mascota mientras trabajan agentes. Va detrás de la opción
+  `bandMascot` (`on` por defecto): si no gusta, se apaga y vuelve la barra de 1 línea.
 
 ## Contexto
-- `plugins/session-band` ya dibuja una banda encima del prompt (`ui.render` sobre `AbovePrompt`) con `atom`,
-  `$.clock.every`, `$.fs.read`, `$.session.cwd` y `$.command.register`: es el molde. `savvy-progress` también usa
-  `AbovePrompt` (solo mientras trabajan agentes) y observa herramientas con `on('tool.call', …)`; ambas bandas se
-  encadenan con `next(e)`.
-- Instalados hoy en el PC de JD: `savvy-progress` y `next-steps` desde `claude-kit-conaltura` (marketplace local que
-  apunta a `40-ia/mods/claude-kit`). `session-band` no está activo.
-- Formatos reales de la tabla:
-  - `mcp-proyectos-dwh`: `## Rebanadas (plan aprobado por JD el 2026-11-13, \`ti-plan\`)`, columnas
-    `# · Qué verás · Rama · Quién · Depende de · Estado`, 6 filas (5 `aceptada`, 1 `pendiente`).
-  - `bienvenida-credenciales`: `## Rebanadas (1.0.1: configurar el envío desde la app)`, texto antes de la tabla,
-    columnas `# · Qué verás · Rama · Quién · Estado`, estados `en revisión` y `pendiente`.
-- Estados de `ti-plan`: `pendiente · en curso · en revisión · aceptada`.
+- Frecuencia real de agentes (333 desde el 2026-07-27): general-purpose 44 %, revisor 33 %, explorador 9 %,
+  ejecutor 5 %, fork 4 %, Plan 2 %, Explore 1 %, claude-code-guide 1 %, consejero 1 %.
+- Regla de traje (`runCostume`): opción `costumes` → cuadrilla por tipo → `Explore` = pirata → por modelo y esfuerzo.
+- La barra de la terminal es una fila de `Raster` (`bandTrackCells`, `hooks/register.tsx:427`) con un spinner que se
+  repinta con `$.ui.blit` (`BAND_SPIN_KEY`). El cangrejo de la barra solo existe en el SVG de escritorio (`:414`).
+- `$.fs.read` lee rutas absolutas (lo usa `session-band`); `$.env.get` da las variables de entorno. La cuadrilla hoy se
+  guarda en `$.store` (`CREW_STORE_KEY`) y `/cuadrilla` redibuja con `update($, now, …)`.
+- Línea base (2026-11-19): `claude plugin test plugins/savvy-progress` → 62 pasan, 0 fallan; versión
+  `1.2.1-conaltura.1`.
 
-## Rebanadas (plan aprobado por JD el 2026-11-18, `ti-plan`)
+## Rebanadas (plan aprobado por JD el 2026-11-19, `ti-plan`)
 
 | # | Qué verás | Rama | Quién | Depende de | Estado |
 |---|---|---|---|---|---|
-| R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | aceptada |
-| R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | aceptada |
-| R3 | La segunda línea dice de quién es el turno | `feat/avance-rebanadas-r3` | Claude | R2 | aceptada |
+| R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | pendiente |
+| R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | pendiente |
+| R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | pendiente |
+| R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | pendiente |
 
-**Archivos compartidos y su dueño:**
-- `.claude-plugin/marketplace.json` y `README.md` de la raíz → R1. R2 solo sube la versión.
-- `plugins/avance-rebanadas/hooks/register.tsx` → R1. R2 agrega la detección y el aviso.
-- `plugins/avance-rebanadas/hooks/plan.ts` (lectura del plan) → R1. R2 no lo cambia.
-- En TI: ficha `avance-rebanadas` → R1; `estandar-desarrollo-ia.md` §10 y `ti-guardarrailes/references/mods.md` → R2.
+**Archivos compartidos y su dueño.** Las cuatro tocan `hooks/register.tsx`: van en orden, ninguna en paralelo.
+`hooks/crews.test.ts` y este plan: R1. `README.md` del plugin: cada rebanada suma su parte, en orden.
+`.claude-plugin/plugin.json` (versión): R4.
 
-### R1 — La barra del proyecto abierto
-- **Qué verás:** abre Claude Code en `10-proyectos/mcps/mcp-proyectos-dwh`, o escribe `/avance mcp-proyectos-dwh` desde
-  `C:\Users\jossa\TI`. Encima del prompt: `mcp-proyectos-dwh ■■■■■□ 5/6 aceptadas (83 %) · Siguiente: R6 · La guía…`.
-  Verde = aceptada, ámbar = en revisión, azul = en curso, gris = pendiente. Cambias un estado en `docs/plan.md` y la
-  barra cambia en 3 s o menos, sin reiniciar. `/avance` solo muestra u oculta la barra. En un proyecto sin
-  `## Rebanadas` no sale nada.
-- **Qué falta:** desde `TI` hay que escribir `/avance <slug>`; no avisa al aceptar; al 100 % no cambia de color.
-- **Archivos:**
-  - Crea `plugins/avance-rebanadas/.claude-plugin/plugin.json`, `hooks/hooks.json`, `hooks/register.tsx`,
-    `hooks/plan.ts`, `hooks/plan.test.ts`, `hooks/register.test.tsx`, `README.md` y `types/index.d.ts` si hace falta.
-  - Modifica `.claude-plugin/marketplace.json` (entrada nueva) y `README.md` de la raíz (lista de mods).
-  - No toca `savvy-progress`, `next-steps`, `session-band` ni `savvy-flow`.
-  - En TI: ficha nueva `50-conocimiento/proyectos/avance-rebanadas.md` (con § Plan), línea en `_meta/index.md` y
-    entrada en `_meta/log.md`.
+### R1 · El interruptor y la cuadrilla cyber-cangrejo
+- **Qué verás:** con `/estilo cyberpunk`, los agentes del método salen en `/agents-info` con su traje neón
+  (netrunner, brazo ciborg, cazador de glitches, oráculo, fixer, guía de neón, samurái). Con `/estilo clásico`
+  vuelven los de savvy, en 2 s o menos y sin reiniciar Claude Code.
+- **Qué falta:** el reparto clásico nuevo (R2), fork y Explore cyber y la calavera (R3), la barra y el panel neón (R4).
+- **Archivos:** modifica `hooks/register.tsx` (lectura del estilo, `CYBER_PALETTE`, 7 trajes, `CREWS` por estilo;
+  borra `OBRA`, `OBRA_PALETTE`, `/cuadrilla` y `CREW_STORE_KEY`; `SAVVY_PALETTE` queda con sus colores propios) y
+  `README.md`. Crea `hooks/crews.test.ts`; borra `hooks/costumes-obra.test.ts` (sus casos genéricos pasan a
+  `crews.test.ts`). No toca la barra ni los otros plugins.
 - **Contratos:**
-  - `leerAvance(texto: string) → { rebanadas: { id, queVeras, estado }[], aceptadas, total } | null`: toma la última
-    sección cuyo título empieza por `## Rebanadas`, la primera tabla después del título, la columna `#` como id, la
-    columna `Qué verás` y la columna `Estado` (por nombre, sin importar mayúsculas ni tildes). Sin sección, sin tabla
-    o sin columna `Estado` → `null`. Un estado que no sea de los cuatro cuenta como `pendiente`.
-  - `buscarPlan(cwd) → ruta | null`: sube desde `cwd` hasta encontrar `docs/plan.md`; acepta `\` y `/`.
-  - `/avance <slug>` → raíz de TI (sube desde `cwd` hasta `AGENTS.md` + `50-conocimiento/`) → lee `ruta_local:` de
-    `50-conocimiento/proyectos/<slug>.md` → `<raíz>/<ruta_local>/docs/plan.md`. Slug sin ficha o sin plan → mensaje
-    claro en el resultado del comando.
-  - Atom `{ plugin: 'avance-rebanadas', key: 'proyecto' }` con `{ ruta, slug, avance, oculto }`; `$.clock.every(3000)`
-    vuelve a leer el plan solo si hay proyecto.
-- **Escenarios:** ninguno (no toca dinero, permisos, fechas ni cálculos delicados).
-- **Pruebas:**
-  - `plan.test.ts`: tabla de `mcp-proyectos-dwh` → 5/6 y siguiente R6; tabla de `bienvenida-credenciales` → 0/2 con
-    R1 en revisión; dos secciones `## Rebanadas` → la última; sin sección o sin columna Estado → `null`; `Estado` con
-    tilde o mayúsculas; filas con `|` escapado en el texto.
-  - `register.test.tsx`: en terminal y en escritorio la banda muestra `5/6` y la siguiente; sin plan no hay banda;
-    `/avance <slug>` fija el proyecto; `/avance` oculta y muestra.
-  - **Terminado:** `claude plugin test plugins/avance-rebanadas` → todas pasan, 0 fallan;
-    `claude plugin validate plugins/avance-rebanadas` limpio; `tsc` sin errores; JD ve la barra en su terminal con el
-    MCP y la ve cambiar al editar un estado.
-- **Riesgos:**
-  - La API de mods en Windows (forma de `$.session.cwd`, rutas de `$.fs.read`) no está probada. Lo primero es una
-    banda mínima que muestra la ruta del plan, instalada en el PC de JD.
-  - La instalación desde el marketplace local puede pedir `claude plugin marketplace update`. Se prueba con la banda
-    mínima.
-  - Dos bandas a la vez (`savvy-progress` mientras trabajan agentes): se comprueba que las dos se ven.
-- **Rama y PR:** `feat/avance-rebanadas-r1`, desde `conaltura` → PR a `conaltura` en el fork.
+  - Archivo `~/.claude/estilo-cierre.txt`: `clasico` o `cyberpunk`. Si falta o trae otra cosa, es `clasico`. La ruta
+    sale de `$.env.get('USERPROFILE')`, o de `HOME` si no existe.
+  - `type Estilo = 'clasico' | 'cyberpunk'`; `let estilo: Estilo`. Se lee en `session.start` y cada `ESTILO_MS = 2000`;
+    si cambia, `update($, now, …)` redibuja.
+  - `CREWS: Record<Estilo, Record<string, string>>`. Ids nuevos: `cyber-netrunner`, `cyber-brazo`, `cyber-cazador`,
+    `cyber-oraculo`, `cyber-fixer`, `cyber-guia`, `cyber-samurai` (filas y cuadros de la maqueta, parte 2).
+  - La opción `costumes` sigue ganando sobre la cuadrilla.
+- **Escenarios:** ninguno (no hay regla delicada).
+- **Pruebas** (`hooks/crews.test.ts`):
+  - `sin archivo de estilo, el método viste la cuadrilla savvy`;
+  - `con estilo cyberpunk, cada tipo del método viste su traje cyber`;
+  - `un valor desconocido en el archivo cuenta como clásico`;
+  - `al cambiar el archivo, el panel cambia sin reiniciar`;
+  - `/cuadrilla ya no existe`;
+  - `la opción costumes gana sobre el estilo`;
+  - `un agente fallido se agacha` y `escritorio: la cuadrilla se dibuja` (vienen de `costumes-obra.test.ts`).
+  - Terminado: `claude plugin test plugins/savvy-progress` → 0 fallan (unas 64 pasan);
+    `tsc -p plugins/savvy-progress` → 0 errores; `claude plugin validate plugins/savvy-progress` → OK.
+- **Riesgos:** que `$.fs.read` no lea la carpeta personal en Windows o que `USERPROFILE` no llegue. Se prueba en la
+  primera hora, en el PC de JD, mostrando el estilo leído en la cabecera del panel. Si falla, se para y se vuelve a
+  `ti-plan`.
+- **Rama y PR:** `feat/cuadrilla-neon-r1` → PR a `conaltura`. Lleva este plan y la maqueta en `docs/diseno/`.
 - **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal y revisión de mod de `ti-guardarrailes` (`references/mods.md`): solo `$.fs.read`,
-  `$.fs.exists`, `$.session.cwd`, `$.clock`, `$.command.register`; sin red ni procesos.
+- **Revisión:** `ti-revisar`; además `ti-guardarrailes` (`references/mods.md`) sobre la lectura nueva de un archivo de
+  la carpeta personal (ADR-0026). Transcribir los 7 trajes es mecánico.
 
-### R2 — Aparece sola y avisa al aceptar
-- **Qué verás:** abre Claude Code en `C:\Users\jossa\TI` sin comando. Al leer o editar un archivo de
-  `10-proyectos/mcps/mcp-proyectos-dwh`, la barra aparece con ese proyecto. Al pasar R6 a `aceptada` sale el aviso
-  «R6 aceptada · 6/6 (100 %)» y la barra completa cambia de color, con «lista para entregar».
-- **Qué falta:** nada del alcance aprobado. Fuera: panel de todos los proyectos y barra por fases.
-- **Archivos:** modifica `plugins/avance-rebanadas/hooks/register.tsx`, `register.test.tsx`, `README.md`,
-  `plugin.json` y `marketplace.json` (versión). En TI: ficha, `estandar-desarrollo-ia.md` §10 (instalación),
-  `40-ia/skills/ti-guardarrailes/references/mods.md` (tabla de mods), fila en ADR-0033 § Cómo se aplica y
-  `_meta/log.md`.
-- **Contratos:**
-  - `on('tool.call')` solo observa (`return next(e)` siempre): toma `file_path`, `path` o `notebook_path` de Read,
-    Edit, Write, Glob y Grep, busca su `docs/plan.md` con `buscarPlan` y, si tiene `## Rebanadas`, lo vuelve el
-    proyecto actual. `/avance <slug>` fijado manda sobre la detección.
-  - Aviso: al releer, toda rebanada que pasó a `aceptada` respecto de la lectura anterior → `$.ui.toast`. La primera
-    lectura no avisa.
+### R2 · El reparto clásico nuevo
+- **Qué verás:** en clásico, general-purpose sale de astronauta, explorador de pirata, revisor de árbitro (saca la
+  amarilla y la roja), claude-code-guide de farero, fork de superhéroe y Explore de safari.
+- **Qué falta:** el mago en la barra (R4).
+- **Archivos:** modifica `hooks/register.tsx` (`SAVVY_CREW`: entran `savvy-arbitro` y `savvy-farero`, salen
+  `savvy-juez` y `savvy-profesor`; `CREWS.clasico` con 9 tipos), `hooks/crews.test.ts` y `README.md`.
+- **Contratos:** `CREWS.clasico` = general-purpose `fable`, revisor `savvy-arbitro`, explorador `explore`,
+  ejecutor `savvy-robot`, fork `savvy-heroe`, Plan `savvy-capitan`, Explore `savvy-safari`, claude-code-guide
+  `savvy-farero`, consejero `savvy-mago`. El orden de `runCostume` no cambia.
 - **Escenarios:** ninguno.
-- **Pruebas:** `register.test.tsx`: un `Read` de un archivo del proyecto fija la barra; un archivo sin plan no la
-  cambia; `/avance` fijado no lo cambia la detección; pasar R6 a aceptada da un aviso y la primera lectura ninguno;
-  100 % muestra «lista para entregar». **Terminado:** `claude plugin test plugins/avance-rebanadas` → 0 fallan; JD
-  lo ve desde `TI`.
-- **Riesgos:** el `tool.call` de un mod puede aprobar herramientas antes que el guardarraíl (ADR-0026). Se mitiga
-  con que solo observa y siempre devuelve `next(e)`; la revisión del mod lo verifica.
-- **Rama y PR:** `feat/avance-rebanadas-r2`, desde `conaltura` con la R1 integrada → PR a `conaltura`.
+- **Pruebas:** `clásico: los 9 tipos visten el reparto D7`; `Explore viste de safari, no de pirata`;
+  `el árbitro y el farero se dibujan en terminal y escritorio`. Terminado: los tres comandos de R1 → 0 fallan.
+- **Riesgos:** el astronauta flota (`walks: false`) y el pirata no parpadea: se ven distintos al resto, a propósito.
+  Si `fork` no llega con ese nombre, viste por esfuerzo (supuesto 1).
+- **Rama y PR:** `feat/cuadrilla-neon-r2`.
 - **Quién:** Claude.
-- **Revisión:** `ti-revisar` normal y revisión de mod (agrega `tool.call` en modo observar).
+- **Revisión:** `ti-revisar`. Mecánico.
 
-### Matriz requisito → rebanada
-| Requisito | Rebanada |
+### R3 · Cyberpunk completo: fork, Explore y los caídos
+- **Qué verás:** en cyberpunk, un fork sale de cangrejo de cromo con un brillo que lo recorre. Explore se vuelve
+  invisible por momentos (camuflaje óptico). Un agente que falla se convierte en la calavera servo, con su ✗.
+- **Qué falta:** la calavera en la barra (R4).
+- **Archivos:** modifica `hooks/register.tsx` (paleta de cromo, `cyber-cromo`, `cyber-camuflaje`, `cyber-calavera`;
+  el dibujo de un fallido elige la calavera en cyberpunk, en terminal y escritorio), `hooks/crews.test.ts`, `README.md`.
+- **Contratos:** `CREWS.cyberpunk` suma fork `cyber-cromo` y Explore `cyber-camuflaje`. Un fallido en cyberpunk se
+  dibuja con `cyber-calavera`; en clásico sigue agachado con su gota.
+- **Escenarios:** ninguno.
+- **Pruebas:** `cyberpunk: fork viste de cromo, con patas de cromo`; `cyberpunk: Explore desaparece en un cuadro`;
+  `cyberpunk: un fallido se dibuja como calavera`; `clásico: un fallido sigue agachado`. Terminado: los tres
+  comandos → 0 fallan.
+- **Riesgos:** el cuadro invisible del camuflaje puede leerse como un error de dibujo; dura un cuadro de 4.
+- **Rama y PR:** `feat/cuadrilla-neon-r3`.
+- **Quién:** Claude.
+- **Revisión:** `ti-revisar`.
+
+### R4 · La barra y el panel en neón, con su mascota (D10)
+- **Qué verás:** mientras trabajan agentes, la barra de la terminal mide 4 líneas. En cyberpunk lleva pista neón con
+  lluvia y la calavera flotando al final; en clásico, la barra de siempre con el mago caminando al final. En cyberpunk,
+  el panel usa acentos rosa y cian. Con `bandMascot: off`, la barra vuelve a 1 línea.
+- **Qué falta:** nada del alcance.
+- **Archivos:** modifica `hooks/register.tsx` (barra de la terminal: `Raster` de 9 × 4 con la mascota y su blit
+  `BAND_MASCOT_KEY` en el reloj de `FRAME_MS`; colores de `bandTrackCells` y acentos por estilo; lluvia en braille en la
+  pista vacía; SVG de escritorio con el mago o la calavera en vez del cangrejo), `hooks/band.test.tsx`,
+  `.claude-plugin/plugin.json` (opción `bandMascot` y versión `1.3.0-conaltura.1`), `README.md`.
+- **Contratos:** opción `bandMascot: on | off` (`on` por defecto). Mascota de la barra: `savvy-mago` en clásico,
+  `cyber-calavera` en cyberpunk. Si la ventana no da para la barra con mascota, sale sin mascota.
+- **Escenarios:** ninguno.
+- **Pruebas:** `terminal: con agentes trabajando, la barra mide 4 filas y lleva la mascota del estilo`;
+  `bandMascot off: la barra vuelve a una fila`; `cyberpunk: la pista usa los colores neón`;
+  `escritorio: la barra lleva el mago o la calavera`; `la mascota de la barra se repinta con su propia clave`.
+  Terminado: los tres comandos → 0 fallan.
+- **Riesgos:** que la fila de la barra se desacomode con un `Raster` de 4 filas en ventanas angostas. Se prueba a 80
+  columnas antes de lo demás; si no cabe, la mascota se omite.
+- **Rama y PR:** `feat/cuadrilla-neon-r4`.
+- **Quién:** Claude.
+- **Revisión:** `ti-revisar`.
+
+## Matriz decisión → rebanada
+| Decisión | Rebanada |
 |---|---|
-| Barra que se llena con cada rebanada aceptada (IDEA #1, D5 de ADR-0033) | R1 |
-| En tiempo real, sin reiniciar | R1 (lectura cada 3 s) |
-| Funciona trabajando desde la raíz `TI` | R1 con `/avance`, R2 sola |
-| Momento de aceptar visible | R2 (aviso y 100 %) |
-| Mod revisado antes de entrar al marketplace (ADR-0026 D3) | R1 y R2 |
-
-### R3 — La segunda línea, por turnos (pedida por JD el 2026-11-18, tras el video `60-explicaciones/avance-rebanadas/barra-por-turnos`)
-- **Qué verás:** con `/avance <slug>`, la segunda línea dice de quién es el turno; al editar los estados del plan cambia
-  sola entre «Te toca», «Trabajando» y «Sigue»; mientras el agente trabaja, la tarea cambia en vivo.
-- **Qué falta:** nada del pedido. Con dos rebanadas en curso muestra la primera con «(+1)»: el mod no sabe a cuál
-  pertenece cada tarea.
-- **Archivos:** `types/index.d.ts` (`Turno`, `tarea`, `accion`), `hooks/plan.ts` (`turno`, `lineaDelTurno`,
-  `tareaEnCurso`), `hooks/register.tsx` (anotar la tarea en `tool.call`, dibujar la línea), las dos pruebas, `README.md`,
-  `plugin.json` y `marketplace.json` (0.3.0).
-- **Contratos:** prioridad en revisión > en curso > pendiente > lista. Tarea: `TodoWrite` en curso (`activeForm`) o
-  `TaskUpdate/TaskCreate` en curso > descripción de `Bash` > «Editando <archivo>» > «qué verás».
-- **Escenarios:** ninguno.
-- **Pruebas:** `plan.test.ts` (turno, línea, tarea de la lista) y `register.test.tsx` (la tarea de las tres fuentes; te
-  toca gana a en curso). Terminado: `claude plugin test` → 28 pasan, 0 fallan; `claude plugin validate` limpio.
-- **Riesgos:** una descripción de comando larga se corta al ancho: la línea trunca al final.
-- **Rama y PR:** `feat/avance-rebanadas-r3`, base `conaltura`. **Quién:** Claude. **Revisión:** normal.
+| D1 trajes / barra y panel | R1 / R4 |
+| D2, D3-D4 | R1 |
+| D5 caídos / barra | R3 / R4 |
+| D6, D7 | R2 |
+| D8 | R3 |
+| D9, D10 | R4 |
 
 ## Plan de pruebas
-- Unitarias: `claude plugin test plugins/avance-rebanadas` (lectura del plan y banda en terminal y escritorio).
-- Validación: `claude plugin validate plugins/avance-rebanadas` y `tsc`.
-- De aceptación, con JD: barra del MCP en su terminal (herdr sobre Windows Terminal), cambio de estado en vivo, y en
-  R2 detección desde `TI` y aviso al aceptar.
+- En cada rebanada: `claude plugin test plugins/savvy-progress`, `tsc -p plugins/savvy-progress` y
+  `claude plugin validate plugins/savvy-progress`, con 0 fallos.
+- Vista previa: JD corre `/reload-plugins` con la rama de la rebanada y lanza un par de agentes en cada estilo.
+- Pre-mortem: si R1 tarda tres días, es por la lectura del archivo en Windows (se prueba en la primera hora). Si R4
+  tarda tres días, es por la fila de 4 líneas (se prueba antes que los colores).
 
-## Implementa
-`claude`: es un mod pequeño sobre una API en acceso anticipado; Codex no aporta.
+## Supuestos (JD puede vetarlos)
+1. El tipo de agente de un fork llega al mod como `fork`, como en los transcripts.
+2. La versión sube una vez, en R4 (`1.3.0-conaltura.1`).
+3. El estilo se relee cada 2 s: el cambio se ve en 2 s o menos.
+4. En clásico, los colores de la barra y del panel no cambian; solo se suma el mago.
+5. Nada de esto va al autor: es del fork.
