@@ -97,12 +97,160 @@ canvas { image-rendering: pixelated; display: block; }
 
 <main>
   <header>
-    <span class="etiqueta">Maqueta · mod de agentes (claude-kit) · v9 · plan</span>
+    <span class="etiqueta">Maqueta · mod de agentes (claude-kit) · v10 · glifos</span>
     <h1>Cuadrilla <span class="acento">Neón</span></h1>
-    <p class="cambios"><b>v9:</b> arriba, el plan en 4 rebanadas sobre las partes de esta maqueta. D10: la barra de la terminal crece a 4 líneas con su mascota.</p>
+    <p class="cambios"><b>v10:</b> arriba, el servocráneo de 2 líneas dibujado de cuatro formas: medio bloque (hoy), braille, cuadrantes y ASCII.</p>
     <p>Así se vería el panel <code>/agents-info</code> en tu terminal. El estilo clásico cambia solo su reparto. El cyberpunk cambia los trajes, la barra y el panel. Lo enciende el mismo <code>/estilo</code>.</p>
   </header>
 
+
+
+  <section aria-labelledby="s-glifos">
+    <span class="etiqueta">0b · El servocráneo en 2 líneas, con otros caracteres</span>
+    <h2 id="s-glifos">Cuatro formas de dibujar en la terminal</h2>
+    <p class="nota">Cada recuadro usa los caracteres reales que pintaría el mod, a tamaño de terminal y ampliados. Todos ocupan 9 columnas × 2 líneas y se animan con el mismo reloj.</p>
+    <div class="glifos" id="glifos"></div>
+  </section>
+<style>
+.glifos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 12px; }
+.glifo { background: var(--papel); border: 1px solid var(--linea); border-radius: 10px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.glifo .muestras { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.glifo pre { margin: 0; background: #0c0c0c; border-radius: 6px; padding: 8px 10px; font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace; line-height: 1.15; letter-spacing: 0; }
+.glifo pre.real { font-size: 15px; }
+.glifo pre.grande { font-size: 44px; }
+.glifo .pro { font-size: 12.5px; color: var(--tenue); }
+</style>
+<script>
+(() => {
+  const C = { h: '#E8E2CF', k: '#1F1E1D', r: '#FF3B3B', R: '#8C1C1C', s: '#8E929A', n: '#00E5FF', w: '#F8F6F1', g: '#39FF14' }
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  const span = (t, fg, bg) => `<span style="color:${fg || 'inherit'};${bg ? `background:${bg};` : ''}">${esc(t)}</span>`
+
+  // --- 1 · Medio bloque (lo de hoy): 9 × 4 pixeles, 2 colores por celda ---
+  const MB_ROWS = ['..hhhhh..', '.hkkhrrh.', 'shhhkhhhs', '..hkhkh..']
+  const mbFrame = k => {
+    const g = MB_ROWS.map(r => [...r])
+    const up = Math.floor(k / 2) % 2 === 1, fin = k === 6 || k === 7 ? 'n' : 's'
+    if (up) { g[2][0] = '.'; g[2][8] = '.'; g[1][0] = fin; g[1][8] = fin } else { g[2][0] = fin; g[2][8] = fin }
+    if (k === 3 || k === 4) g[1][5] = 'w'
+    if (k === 8) { g[3][3] = 'h'; g[3][5] = 'h' }
+    if (k === 10 || k === 11) { g[1][5] = 'R'; g[1][6] = 'R' }
+    return g
+  }
+  const medioBloque = k => {
+    const g = mbFrame(k); let out = ''
+    for (let fila = 0; fila < 4; fila += 2) {
+      for (let x = 0; x < 9; x++) {
+        const a = C[g[fila][x]], b = C[g[fila + 1][x]]
+        out += a && b ? span('▀', a, b) : a ? span('▀', a) : b ? span('▄', b) : ' '
+      }
+      out += '\n'
+    }
+    return out
+  }
+
+  // --- 2 · Braille: 18 × 8 puntos, 1 color de puntos por celda ---
+  const BR = [
+    '....##########....',
+    '..##############..',
+    '.###....###....##.',
+    '.###....###.##.##.',
+    '..######...#####..',
+    '...############...',
+    '...#.#.#.##.#.#...',
+    '....#.#.#..#.#....',
+  ]
+  const brFrame = k => {
+    const g = BR.map(r => [...r])
+    const up = Math.floor(k / 2) % 2 === 1
+    const fins = up ? [2, 3] : [4, 5]
+    for (const y of fins) { g[y][0] = '#'; g[y][17] = '#' }
+    if (k === 8) { g[6] = [...'...############...']; g[7] = [...'..................'] }
+    if (k === 10 || k === 11) { g[3][12] = '.'; g[3][13] = '.' }
+    return g
+  }
+  const BIT = [[0x01, 0x02, 0x04, 0x40], [0x08, 0x10, 0x20, 0x80]]
+  const braille = k => {
+    const g = brFrame(k); let out = ''
+    for (let cy = 0; cy < 2; cy++) {
+      for (let cx = 0; cx < 9; cx++) {
+        let bits = 0
+        for (let dx = 0; dx < 2; dx++) for (let dy = 0; dy < 4; dy++) if (g[cy * 4 + dy][cx * 2 + dx] === '#') bits |= BIT[dx][dy]
+        // El óptico: la celda del ojo derecho va en rojo, y destella en blanco.
+        const esOjo = cy === 0 && (cx === 6)
+        const fg = esOjo ? (k === 3 || k === 4 ? C.w : C.r) : (cx === 0 || cx === 8) && (k === 6 || k === 7) ? C.n : C.h
+        out += bits ? span(String.fromCodePoint(0x2800 + bits), fg) : ' '
+      }
+      out += '\n'
+    }
+    return out
+  }
+
+  // --- 3 · Cuadrantes: 18 × 4 pixeles, 2 colores por celda ---
+  const QD = [
+    '...hhhhhhhhhhhh...',
+    '.hhhkkkkhhhrrrrhh.',
+    '..hhhhhhkkhhhhhh..',
+    '...hkhkhkhkhkhkh..',
+  ]
+  const qdFrame = k => {
+    const g = QD.map(r => [...r])
+    const up = Math.floor(k / 2) % 2 === 1, fin = k === 6 || k === 7 ? 'n' : 's'
+    if (up) { g[1][0] = fin; g[1][17] = fin } else { g[2][0] = fin; g[2][17] = fin }
+    if (k === 3 || k === 4) { g[1][12] = 'w'; g[1][13] = 'w' }
+    if (k === 8) for (const x of [4, 6, 8, 10, 12, 14]) g[3][x] = 'h'
+    if (k === 10 || k === 11) for (const x of [11, 12, 13, 14]) g[1][x] = 'R'
+    return g
+  }
+  const QCH = ' ▘▝▀▖▌▞▛▗▚▐▜▄▙▟█'
+  const cuadrantes = k => {
+    const g = qdFrame(k); let out = ''
+    for (let cy = 0; cy < 2; cy++) {
+      for (let cx = 0; cx < 9; cx++) {
+        const px = [g[cy * 2][cx * 2], g[cy * 2][cx * 2 + 1], g[cy * 2 + 1][cx * 2], g[cy * 2 + 1][cx * 2 + 1]].map(c => C[c] || null)
+        const colores = [...new Set(px.filter(Boolean))]
+        if (!colores.length) { out += ' '; continue }
+        // Frente = el primer color; fondo = el segundo, o el de la terminal si hay huecos.
+        const fg = colores[0], bg = colores[1] || null
+        let bits = 0
+        px.forEach((c, i) => { if (c === fg) bits |= [1, 2, 4, 8][i] })
+        out += span(QCH[bits], fg, px.includes(null) ? null : bg)
+      }
+      out += '\n'
+    }
+    return out
+  }
+
+  // --- 4 · ASCII hacker: 9 caracteres × 2 líneas, coloreados ---
+  const ascii = k => {
+    const up = Math.floor(k / 2) % 2 === 1
+    const ala = up ? ['-=', '=-'] : ['=-', '-=']
+    const ojo = k === 3 || k === 4 ? '*' : k === 10 || k === 11 ? '-' : '@'
+    const izq = k === 10 || k === 11 ? '-' : 'O'
+    const pie = k === 6 || k === 7 ? '  vvvvv  ' : k === 8 ? '  =====  ' : '  ^^^^^  '
+    const finC = k === 6 || k === 7 ? C.n : C.s
+    return span(ala[0], finC) + span('[', C.h) + span(izq, C.h) + span('_', C.h) + span(ojo, k === 3 || k === 4 ? C.w : C.r) + span(']', C.h) + span(ala[1], finC) + '\n' + span(pie, k === 8 ? C.h : C.n) + '\n'
+  }
+
+  const ESTILOS = [
+    { nombre: 'Medio bloque ▀ (hoy)', pinta: medioBloque, pro: '9 × 4 pixeles, 2 colores por celda. Bloques sólidos; poco detalle.' },
+    { nombre: 'Braille ⣿', pinta: braille, pro: '18 × 8 puntos: el doble de detalle en cada sentido. Un color de puntos por celda: el óptico va en su celda roja. Se ve «de línea», como una pantalla LCD.' },
+    { nombre: 'Cuadrantes ▚', pinta: cuadrantes, pro: '18 × 4 pixeles, 2 colores por celda: el doble de ancho que hoy, mismo alto. Bordes más finos a los lados.' },
+    { nombre: 'ASCII hacker', pinta: ascii, pro: 'Solo caracteres de teclado: alas -= =-, ojos O y @, propulsor ^^^. El más «terminal»; no es un dibujo, es un símbolo.' },
+  ]
+  const cont = document.getElementById('glifos')
+  const vivos = ESTILOS.map(e => {
+    const d = document.createElement('div'); d.className = 'glifo'
+    d.innerHTML = `<h3>${e.nombre}</h3><div class="muestras"><pre class="real"></pre><pre class="grande"></pre></div><p class="pro">${e.pro}</p>`
+    cont.appendChild(d)
+    return { e, pres: d.querySelectorAll('pre') }
+  })
+  let k = 0
+  const tic = () => { vivos.forEach(v => v.pres.forEach(p => { p.innerHTML = v.e.pinta(k) })); k = (k + 1) % 12 }
+  tic()
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(tic, 250)
+})()
+</script>
 
   <section aria-labelledby="s-plan">
     <span class="etiqueta">0 · El plan en rebanadas</span>
