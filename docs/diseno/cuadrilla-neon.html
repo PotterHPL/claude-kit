@@ -1,0 +1,607 @@
+<title>Cuadrilla Neón</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: una sola columna. Arriba el interruptor /estilo y el panel tal como se vería en la terminal; abajo, la hoja de contacto de cada sprite (4 cuadros ampliados) y lo que falta decidir. Página deliberadamente oscura: es una terminal. */
+:root {
+  color-scheme: dark;
+  --fondo: #0b0a12;
+  --papel: #14121f;
+  --linea: #2a2640;
+  --tinta: #e8e6f0;
+  --tenue: #9c97b3;
+  --rosa: #ff2e88;
+  --cian: #00e5ff;
+  --amarillo: #fcee0a;
+  --f-titulo: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "Geist Mono", "Cascadia Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--fondo); color: var(--tinta); font-family: var(--f-mono); font-size: 14px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 1060px; margin: 0 auto; padding-block: 32px 64px; display: grid; gap: 44px; }
+h1, h2, h3 { font-family: var(--f-titulo); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: clamp(26px, 4.4vw, 38px); font-weight: 700; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.etiqueta { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--tenue); }
+.nota { color: var(--tenue); font-size: 13px; }
+header, section { display: grid; gap: 14px; }
+.acento { color: var(--rosa); }
+
+/* Interruptores */
+.fila { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.grupo { display: flex; gap: 6px; flex-wrap: wrap; }
+.boton {
+  font: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; padding: 7px 13px;
+  background: var(--papel); color: var(--tinta); border: 1px solid var(--linea);
+}
+.boton:focus-visible { outline: 2px solid var(--cian); outline-offset: 2px; }
+.boton[aria-pressed="true"] { border-color: var(--rosa); box-shadow: 0 0 0 1px var(--rosa), 0 0 14px rgba(255,46,136,.35); }
+.boton:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Terminal */
+.term { border-radius: 10px; border: 1px solid #2c2c2c; background: #161616; overflow-x: auto; }
+.term-barra { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid #2c2c2c; color: #8a8a8a; font-size: 12px; align-items: center; }
+.term-barra i { width: 9px; height: 9px; border-radius: 50%; background: #3a3a3a; display: inline-block; }
+.term-cuerpo { padding: 14px 16px 16px; min-width: 560px; display: grid; gap: 10px; }
+.panel { border: 1px solid #3a3a3a; border-radius: 6px; padding: 8px 10px; display: grid; gap: 4px; transition: border-color .2s, box-shadow .2s, background .2s; }
+.panel-cab { display: flex; justify-content: space-between; color: #9a9a9a; font-size: 12px; padding-bottom: 4px; }
+.agente { display: grid; grid-template-columns: 70px 150px 90px 70px 1fr; gap: 10px; align-items: center; font-size: 13px; color: #d6d6d6; }
+.agente .tipo { color: #ececec; }
+.agente .dim { color: #8a8a8a; }
+.agente .estado { color: #8a8a8a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.term.cyber .panel { border-color: var(--rosa); box-shadow: 0 0 0 1px rgba(255,46,136,.25), inset 0 0 22px rgba(255,46,136,.07); background: #0d0a14; }
+.term.cyber .panel-cab { color: var(--cian); }
+.term.cyber .agente .tipo { color: var(--cian); }
+.term.cyber .agente .dim { color: #b07ad6; }
+.term.cyber .agente .estado { color: #ff7ab8; }
+canvas { image-rendering: pixelated; display: block; }
+.barra { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; color: #9a9a9a; font-size: 12px; }
+
+/* Hojas de contacto */
+.sets { display: grid; gap: 30px; }
+.hojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 12px; }
+.hoja { background: var(--papel); border: 1px solid var(--linea); border-radius: 10px; padding: 14px; display: grid; gap: 8px; align-content: start; }
+.hoja-cab { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.hoja-cab code { color: var(--cian); font-size: 12px; }
+.hoja .boton { justify-self: start; }
+.cuadros { display: flex; gap: 6px; align-items: end; flex-wrap: wrap; }
+.cuadro { display: grid; gap: 3px; justify-items: center; font-size: 10.5px; color: var(--tenue); }
+.cuadro canvas { background: #1b1828; border-radius: 3px; }
+.vivo canvas { background: transparent; }
+.decisiones { display: grid; gap: 10px; }
+.decision { display: grid; grid-template-columns: 52px 1fr; gap: 12px; background: var(--papel); border: 1px dashed var(--linea); border-radius: 10px; padding: 12px 16px; }
+.decision b { color: var(--rosa); font-family: var(--f-titulo); }
+.decision.lista { border-style: solid; }
+.decision.lista b { color: #39ff14; }
+.mapa { display: grid; gap: 4px; overflow-x: auto; }
+.m-cab, .m-fila, .m-pie { display: grid; grid-template-columns: minmax(260px, 1fr) repeat(4, 120px); gap: 4px; align-items: center; min-width: 760px; }
+.m-cab span { font-size: 12px; color: var(--tenue); text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; }
+.m-cab span + span { text-align: center; color: var(--cian); font-family: var(--f-titulo); font-size: 15px; }
+.m-fila > span { background: var(--papel); border: 1px solid var(--linea); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+.m-fila b, .m-fila i { height: 100%; min-height: 36px; border-radius: 6px; display: grid; place-items: center; }
+.m-fila b { background: rgba(255,46,136,.18); border: 1px solid var(--rosa); color: var(--rosa); font-style: normal; }
+.m-fila i { background: transparent; border: 1px dashed var(--linea); }
+.m-pie span { font-size: 12px; color: var(--tenue); padding: 6px 8px; text-align: center; }
+.m-pie span:first-child { text-align: left; text-transform: uppercase; letter-spacing: .08em; }
+.ref { font-size: 12px; color: var(--tenue); }
+.ref a { color: var(--cian); }
+.cambios { color: var(--tenue); font-size: 13px; border-left: 3px solid var(--rosa); padding-left: 10px; }
+@media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+</style>
+
+<main>
+  <header>
+    <span class="etiqueta">Maqueta · mod de agentes (claude-kit) · v9 · plan</span>
+    <h1>Cuadrilla <span class="acento">Neón</span></h1>
+    <p class="cambios"><b>v9:</b> arriba, el plan en 4 rebanadas sobre las partes de esta maqueta. D10: la barra de la terminal crece a 4 líneas con su mascota.</p>
+    <p>Así se vería el panel <code>/agents-info</code> en tu terminal. El estilo clásico cambia solo su reparto. El cyberpunk cambia los trajes, la barra y el panel. Lo enciende el mismo <code>/estilo</code>.</p>
+  </header>
+
+
+  <section aria-labelledby="s-plan">
+    <span class="etiqueta">0 · El plan en rebanadas</span>
+    <h2 id="s-plan">Cuatro rebanadas, una detrás de otra</h2>
+    <p class="nota">Cada columna es una rebanada: una rama, un PR, y la ves funcionar con <code>/reload-plugins</code>. Las cuatro tocan el mismo archivo (<code>register.tsx</code>), así que van en orden.</p>
+    <div class="mapa" role="table" aria-label="Qué parte completa cada rebanada">
+      <div class="m-cab" role="row"><span role="columnheader">Parte de la maqueta</span><span role="columnheader">R1</span><span role="columnheader">R2</span><span role="columnheader">R3</span><span role="columnheader">R4</span></div>
+      <div class="m-fila" role="row"><span role="cell"><code>/estilo</code> cambia el mod sin reiniciar</span><b role="cell">●</b><i role="cell"></i><i role="cell"></i><i role="cell"></i></div>
+      <div class="m-fila" role="row"><span role="cell">Cuadrilla cyber-cangrejo (7 trajes) · <code>obra</code> y <code>/cuadrilla</code> fuera</span><b role="cell">●</b><i role="cell"></i><i role="cell"></i><i role="cell"></i></div>
+      <div class="m-fila" role="row"><span role="cell">Clásico: astronauta, pirata, árbitro, farero, superhéroe en fork, safari en Explore</span><i role="cell"></i><b role="cell">●</b><i role="cell"></i><i role="cell"></i></div>
+      <div class="m-fila" role="row"><span role="cell">Cyberpunk: cromo en fork, camuflaje en Explore</span><i role="cell"></i><i role="cell"></i><b role="cell">●</b><i role="cell"></i></div>
+      <div class="m-fila" role="row"><span role="cell">Agente caído = calavera (cyberpunk)</span><i role="cell"></i><i role="cell"></i><b role="cell">●</b><i role="cell"></i></div>
+      <div class="m-fila" role="row"><span role="cell">Barra de 4 líneas con calavera o mago (D10, se apaga con una opción)</span><i role="cell"></i><i role="cell"></i><i role="cell"></i><b role="cell">●</b></div>
+      <div class="m-fila" role="row"><span role="cell">Barra y panel en neón (cyberpunk)</span><i role="cell"></i><i role="cell"></i><i role="cell"></i><b role="cell">●</b></div>
+      <div class="m-pie" role="row"><span role="cell">Qué verás</span><span role="cell">/estilo cyberpunk viste de neón</span><span role="cell">Astronauta y pirata encabezan</span><span role="cell">El caído se vuelve calavera</span><span role="cell">La barra crece con su mascota</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-panel">
+    <span class="etiqueta">1 · El panel en la terminal</span>
+    <h2 id="s-panel">Cambia el estilo y simula un fallo</h2>
+    <div class="fila">
+      <div class="grupo" role="group" aria-label="Estilo">
+        <button class="boton" type="button" id="e-clasico">▢ /estilo clásico</button>
+        <button class="boton" type="button" id="e-cyber">⚡ /estilo cyberpunk</button>
+      </div>
+      <div class="grupo">
+        <button class="boton" type="button" id="fallo">✗ Simular un fallo</button>
+      </div>
+    </div>
+    <div class="term" id="term">
+      <div class="term-barra"><i></i><i></i><i></i><span>Claude Code · /agents-info</span></div>
+      <div class="term-cuerpo">
+        <div class="panel">
+          <div class="panel-cab"><span id="panel-titulo">agentes ×9</span><span id="panel-crew">cuadrilla savvy</span></div>
+          <div id="agentes"></div>
+        </div>
+        <div class="barra"><canvas id="barra" width="560" height="30" aria-label="Barra de la tanda"></canvas><span id="barra-pct">43%</span></div>
+      </div>
+    </div>
+    <p class="nota">Tamaño real aproximado: cada pixel es medio carácter de la terminal (▀). Clásico usa la cuadrilla savvy y cyberpunk la cyber-cangrejo. <code>obra</code> desaparece y <code>/cuadrilla</code> ya no hace falta: la cuadrilla la decide <code>/estilo</code>.</p>
+  </section>
+
+  <section class="sets" aria-labelledby="s-hojas">
+    <div>
+      <span class="etiqueta">2 · Hoja de contacto</span>
+      <h2 id="s-hojas">Cada sprite, sus 4 cuadros ampliados</h2>
+    </div>
+    <div>
+      <h3>Cuadrilla <span class="acento">cyber-cangrejo</span>: el cangrejo con equipo cyberpunk</h3>
+      <div class="hojas" id="hojas-cangrejo"></div>
+    </div>
+    <div>
+      <h3>La calavera servo · flota en la barra y reemplaza a los agentes que fallan</h3>
+      <div class="hojas" id="hojas-calavera"></div>
+    </div>
+    <p class="nota">Dibujos originales a 9 × 8 pixeles. Cada referente inspira un arquetipo; no se copió ningún personaje, sprite ni logo.</p>
+  </section>
+
+  <section class="sets" aria-labelledby="s-d8">
+    <div>
+      <span class="etiqueta">3 · Cyberpunk: fork y Explore</span>
+      <h2 id="s-d8">Dos trajes nuevos para la cuadrilla</h2>
+      <p class="nota">Elegidos: el cangrejo de cromo y el camuflaje óptico. Las otras dos opciones quedan aquí como registro.</p>
+    </div>
+    <div>
+      <h3>fork · la copia de la sesión</h3>
+      <div class="hojas" id="hojas-fork"></div>
+    </div>
+    <div>
+      <h3>Explore · el que busca rápido</h3>
+      <div class="hojas" id="hojas-explore"></div>
+    </div>
+  </section>
+
+  <section class="sets" aria-labelledby="s-clasico">
+    <div>
+      <span class="etiqueta">4 · Clásico: revisor y guía</span>
+      <h2 id="s-clasico">Candidatos con más personalidad</h2>
+      <p class="nota">El pirata y el astronauta del autor ya visten a <code>Explore</code> y al nivel <code>fable</code>. Estos son distintos, para que no salgan dos cangrejos iguales en el panel.</p>
+    </div>
+    <div>
+      <h3>Revisor</h3>
+      <div class="hojas" id="hojas-rev"></div>
+    </div>
+    <div>
+      <h3>claude-code-guide</h3>
+      <div class="hojas" id="hojas-guia"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-decidir">
+    <span class="etiqueta">5 · Lo decidido y lo que falta</span>
+    <h2 id="s-decidir">Decisiones</h2>
+    <div class="decisiones">
+      <div class="decision lista"><b>D1 ✓</b><div><h3>Trajes, barra y panel pasan a cyberpunk</h3><p class="nota">Solo en el estilo cyberpunk. El clásico queda como hoy.</p></div></div>
+      <div class="decision lista"><b>D2 ✓</b><div><h3>La cuadrilla <code>obra</code> se borra</h3><p class="nota">El clásico queda con savvy. Los trajes de obra quedan en el historial de git.</p></div></div>
+      <div class="decision lista"><b>D3 ✓</b><div><h3>Cyberpunk usa solo la cuadrilla cyber-cangrejo</h3><p class="nota">El set sin cangrejo se descarta, salvo la calavera.</p></div></div>
+      <div class="decision lista"><b>D4 ✓</b><div><h3>No hay cuadrilla que elegir</h3><p class="nota">Clásico es savvy y cyberpunk es cyber-cangrejo. <code>/cuadrilla</code> sale del mod.</p></div></div>
+      <div class="decision lista"><b>D7 ✓</b><div><h3>Tus favoritos salen más</h3><p class="nota">Clásico: astronauta en general-purpose (44 %), pirata en explorador (9 %), superhéroe en fork y safari en Explore.</p></div></div>
+      <div class="decision lista"><b>D8 ✓</b><div><h3>Cyberpunk: cromo para <code>fork</code> y camuflaje óptico para <code>Explore</code></h3><p class="nota">Con esto, los cyberpunk quedan cerrados.</p></div></div>
+      <div class="decision lista"><b>D10 ✓</b><div><h3>En la terminal, la barra crece a 4 líneas con su mascota</h3><p class="nota">Va detrás de la opción <code>bandMascot</code>: si no te gusta, se apaga y vuelve la barra de 1 línea.</p></div></div>
+      <div class="decision lista"><b>D9 ✓</b><div><h3>El mago camina en la barra del clásico</h3><p class="nota">Sale en cada tanda, como la calavera en cyberpunk, y sigue vistiendo al consejero.</p></div></div>
+      <div class="decision lista"><b>D6 ✓</b><div><h3>El árbitro reemplaza al juez y el farero al profesor</h3><p class="nota">Solo en el estilo clásico. Ya están puestos en el panel de la parte 1.</p></div></div>
+      <div class="decision lista"><b>D5 ✓</b><div><h3>La calavera va en la barra y en los caídos</h3><p class="nota">Flota en la punta del progreso y reemplaza al cangrejo de un agente que falla.</p></div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* Paleta: letras como en el mod (MINI_PALETTE). */
+const PAL = {
+  c: '#D97757', k: '#1F1E1D', K: '#2B2B3A', w: '#F8F6F1', s: '#8E929A', S: '#5C606A',
+  m: '#FF2E88', M: '#9E1257', n: '#00E5FF', N: '#0A7F96', y: '#FCEE0A', g: '#39FF14', G: '#16872E',
+  p: '#9D4EDD', P: '#4E1D80', r: '#FF3B3B', R: '#8C1C1C', o: '#FF8A00',
+  h: '#E8E2CF', H: '#B9B19A', f: '#E3A779', F: '#B97A55',
+  /* savvy */
+  e: '#D9C08C', E: '#B89B62', d: '#7A4A26', B: '#9CC3F5', L: '#DBFF69', Z: '#F5C542', Y: '#C99A1E', b: '#2F6FD0',
+};
+const SAVVY_PAL = { ...PAL, K: '#4A4A48', p: '#B382FF', r: '#E5483F', R: '#A6322C', y: '#F5C542',
+  l: '#A1D81A', L: '#DBFF69', m: '#FF795A', W: '#CFD3D0', D: '#5A3519', o: '#F08A24' };
+const LEGS = '.c.c.c.c.';
+const LIFTED = ['...c...c.', '.c...c...'];
+
+/* Cuadrilla savvy (la de hoy, copiada del mod) */
+const SAVVY = [
+  { id: 'savvy-safari', tipo: 'explorador', rows: ['...eee...', '.EEEEEEE.', '.ccccccc.', '.ckccckcK', 'ccccccccc', '.ccccccc.'],
+    frames: [[], [[2,3,'c'],[3,3,'k'],[6,3,'c'],[7,3,'k']], [[2,3,'c'],[3,3,'k'],[6,3,'c'],[7,3,'k'],[8,3,'B']], [[8,3,'B']]] },
+  { id: 'savvy-robot', tipo: 'ejecutor', rows: ['....r....', '..sssss..', '.sssssss.', '.cLLLLLc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[[2,3,'w']], [[4,3,'w'],[4,0,'K']], [[6,3,'w']], [[4,3,'w'],[4,0,'K']]] },
+  { id: 'savvy-juez', tipo: 'revisor', rows: ['.wwwwwww.', 'wwwwwwwww', 'wcccccccw', '.ckccckc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[[8,3,'Y'],[8,2,'d']], [[8,3,'Y'],[8,2,'d']], [[8,5,'Y'],[7,5,'d']], [[8,5,'Y'],[7,5,'d'],[8,6,'Z']]] },
+  { id: 'savvy-mago', tipo: 'consejero', rows: ['...pZp...', 'Lppppppp.', 'dccccccc.', 'dckccckc.', 'ccccccccc', 'dccccccc.'],
+    frames: [[], [[0,1,'Z']], [[0,1,'w'],[4,0,'y']], [[0,1,'Z']]] },
+  { id: 'savvy-capitan', tipo: 'Plan', rows: ['..wwwww..', '.kkkZkkk.', '.ccccccc.', '.ckccckc.', 'ccccccccY', '.ccccccc.'],
+    frames: [[], [[8,3,'Y']], [[8,3,'Y'],[8,2,'y'],[2,3,'c'],[3,3,'k'],[6,3,'c'],[7,3,'k']], [[8,3,'Y']]] },
+  { id: 'savvy-profesor', tipo: 'claude-code-guide', rows: ['.kkkkkkk.', '...kkk.Z.', '.ccccccZ.', '.ckccckc.', 'ccccccccb', '.cccccccb'],
+    frames: [[], [[7,2,'.'],[8,2,'Z']], [[7,2,'.'],[8,1,'Z'],[7,1,'.']], [[7,2,'.'],[8,2,'Z']]] },
+  { id: 'savvy-heroe', tipo: 'general-purpose', rows: ['.........', '..kkkkk..', 'rcccccccr', 'rkwkckwkr', 'ccccccccc', 'rccZZcccr'],
+    frames: [[], [[0,5,'.'],[8,5,'.'],[0,3,'R'],[8,3,'R']], [[0,5,'.'],[8,5,'.'],[0,2,'R'],[8,2,'R']], [[0,5,'.'],[8,5,'.'],[0,3,'R'],[8,3,'R']]] },
+].map(s => ({ ...s, pal: SAVVY_PAL, cangrejo: true }));
+
+/* Set 1 · cyber-cangrejo: 6 filas (2 de casco, 4 de cuerpo); las patas las pone el mod. */
+const CYBER_CANGREJO = [
+  { id: 'cyber-netrunner', nombre: 'Netrunner', tipo: 'explorador',
+    que: 'Capucha y visor. Un brillo recorre el visor y un paquete de datos baja por el cable.',
+    rows: ['..PPPPP..', '.PpppppP.', '.PcccccP.', '.cnnnnnc.', 'ccccccccN', '.cccccccN'],
+    frames: [[[2,3,'w']], [[4,3,'w'],[8,4,'n']], [[6,3,'w'],[8,5,'n']], [[8,6,'N'],[8,5,'n']]], blinks: false },
+  { id: 'cyber-brazo', nombre: 'Brazo ciborg', tipo: 'ejecutor',
+    que: 'Cresta rosa y brazo de cromo. Lo levanta y golpea el piso: salta una chispa.',
+    rows: ['....m....', '...mMm...', '.ccccccc.', '.ckccckc.', 'scccccccc', '.ccccccc.'],
+    frames: [[[0,3,'s']], [[0,2,'s'],[0,3,'s'],[0,4,'.']], [[0,4,'.'],[0,5,'s'],[0,6,'y'],[0,7,'o']], [[0,5,'s']]] },
+  { id: 'cyber-cazador', nombre: 'Cazador de glitches', tipo: 'revisor',
+    que: 'Cinta rosa y monóculo rojo. Escanea con el lector: luz cian y luego verde.',
+    rows: ['.........', '.mmmmmmm.', '.ccccccc.', '.ckcccrr.', 'ccccccccS', '.cccccccS'],
+    frames: [[], [[7,3,'w'],[8,3,'n']], [[8,2,'n'],[8,3,'n']], [[8,4,'g'],[8,5,'g']]], blinks: false },
+  { id: 'cyber-oraculo', nombre: 'Oráculo de IA', tipo: 'consejero',
+    que: 'Capucha morada y túnica. Una esfera holográfica flota y parpadea sobre la cabeza.',
+    rows: ['....n....', '.PPPPPPP.', 'PcccccccP', 'PckccckcP', 'ccccccccc', '.ppppppp.'],
+    frames: [[], [[4,0,'w'],[3,0,'N'],[5,0,'N']], [[4,0,'.']], [[4,0,'N']]] },
+  { id: 'cyber-fixer', nombre: 'Fixer', tipo: 'Plan',
+    que: 'Gafas oscuras. Abre un holomapa cian a su lado y las gafas brillan.',
+    rows: ['.........', '..kkkkk..', '.ccccccc.', '.kkkckkk.', 'ccccccccN', '.cccccccN'],
+    frames: [[], [[8,3,'n']], [[8,2,'n'],[8,3,'n'],[2,3,'y']], [[8,3,'n'],[8,4,'n']]], blinks: false },
+  { id: 'cyber-guia', nombre: 'Guía de neón', tipo: 'claude-code-guide',
+    que: 'Gorra cian y un letrero de neón en un poste. El neón parpadea y suelta una chispa.',
+    rows: ['......mmm', '..nnnnn.s', '.NNNNNNNs', '.ckccckcs', 'ccccccccs', '.ccccccc.'],
+    frames: [[], [[6,0,'M'],[7,0,'M'],[8,0,'M']], [], [[6,0,'w']]] },
+  { id: 'cyber-samurai', nombre: 'Samurái neón', tipo: 'general-purpose',
+    que: 'Moño, faja rosa y katana de luz. Brilla la hoja, corta en diagonal y la guarda.',
+    rows: ['....k....', '..kkkkk..', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.cmmmmmc.'],
+    frames: [[[8,1,'n'],[8,2,'n'],[8,3,'n']], [[8,0,'w'],[8,1,'n'],[8,2,'n'],[8,3,'n']], [[6,0,'n'],[7,1,'n'],[8,2,'w']], [[8,3,'n']]] },
+].map(s => ({ ...s, pal: PAL, cangrejo: true }));
+
+/* Set 2 · cyber: 8 filas completas, sin cangrejo. Arquetipos de la cultura cyberpunk, dibujos originales. */
+const CYBER = [
+  { id: 'cyber-calavera', nombre: 'Calavera servo', tipo: 'explorador',
+    ref: ['Servo-skull, Warhammer 40k', 'https://warhammer40k.fandom.com/wiki/Servo-skull'],
+    que: 'Calavera que flota con un óptico rojo en la cuenca. Escanea, destella y sigue flotando.',
+    rows: ['..hhhhh..', '.hhhhhhhs', '.hkkhrrh.', '.hkkhrrhS', '.hhhkhhhS', '..hkhkh..', '..SsSsS..', '...nNn...'],
+    frames: [[[6,2,'w']], [[5,3,'w'],[3,7,'N'],[4,7,'n'],[5,7,'N']], [[5,2,'w'],[6,2,'w'],[5,3,'w'],[6,3,'w']], []] },
+  { id: 'cyber-mantis', nombre: 'Edgerunner', tipo: 'ejecutor',
+    ref: ['Cuchillas mantis, Cyberpunk 2077 y Edgerunners', 'https://cyberpunk.fandom.com/wiki/Mantis_Blades'],
+    que: 'Cresta rosa, ojo cian y chaqueta amarilla. Abre los antebrazos y saca las cuchillas.',
+    rows: ['...mMm...', '..fmmmf..', '..fffff..', '..fkfnf..', '..ffkff..', '...fff...', '.yKKKKKy.', 'KKKyKyKKK'],
+    frames: [[], [[0,6,'s'],[8,6,'s']], [[0,6,'s'],[8,6,'s'],[0,5,'w'],[8,5,'w'],[0,4,'w'],[8,4,'w'],[1,3,'m'],[7,3,'m']], [[0,6,'s'],[8,6,'s'],[0,5,'w'],[8,5,'w'],[5,3,'w']]] },
+  { id: 'cyber-cara', nombre: 'Cara de estado', tipo: 'revisor',
+    ref: ['Cara de la barra de estado, Doom', 'https://doomwiki.org/wiki/Status_bar_face'],
+    que: 'Como la de Doom, con mandíbula de cromo. Mira a un lado, al otro, sonríe y le brillan los ojos.',
+    rows: ['.kkkkkkk.', '.fkkfkkf.', '.fkwfkwf.', '.ffffnSf.', '.ffFFfSf.', '.fkkkkSf.', '..fffSS..', '.KKnKnKK.'],
+    frames: [[], [[2,2,'w'],[3,2,'k'],[5,2,'w'],[6,2,'k']], [[3,5,'w'],[4,5,'w'],[2,1,'f'],[6,1,'f']], [[3,2,'r'],[6,2,'r'],[5,3,'m']]] },
+  { id: 'cyber-fantasma', nombre: 'Fantasma de la Red', tipo: 'consejero',
+    ref: ['Ghost in the Shell y las IA de Neuromancer', 'https://retrofuturista.com/the-cyberpunk-guide-50-years-of-high-tech-low-life-across-literature-film-anime-comics-gaming/'],
+    que: 'Una IA hecha de luz, con líneas de escaneo. Tiene un glitch, se le encienden los ojos rojos y ondula por abajo.',
+    rows: ['..nnnnn..', '.nnnnnnn.', '.nkknkkn.', '.nkknkkn.', 'nnnnnnnnn', 'NNNNNNNNN', 'nnnnnnnnn', 'n.nn.nn.n'],
+    frames: [[], [[1,2,'m'],[0,3,'m'],[8,4,'.'],[0,6,'.']], [[2,2,'r'],[3,2,'r'],[5,2,'r'],[6,2,'r']], [[0,7,'.'],[1,7,'n'],[3,7,'.'],[4,7,'n'],[6,7,'.'],[7,7,'n'],[8,7,'.']]] },
+  { id: 'cyber-netrunner', nombre: 'Netrunner', tipo: 'Plan',
+    ref: ['Los «console cowboys» de Neuromancer', 'https://retrofuturista.com/the-cyberpunk-guide-50-years-of-high-tech-low-life-across-literature-film-anime-comics-gaming/'],
+    que: 'Capucha y visor conectado por cables. El código corre por el visor y los datos bajan por los cables.',
+    rows: ['..PPPPP..', '.PPfffPP.', '.PnnnnnP.', '.PfffffP.', '.PffkffP.', 'NPPPfPPPN', 'N.PPPPP.N', 'N.PPPPP.N'],
+    frames: [[[2,2,'g']], [[4,2,'g'],[0,6,'n'],[8,6,'n']], [[6,2,'g'],[0,7,'n'],[8,7,'n']], [[2,2,'w'],[3,2,'w'],[4,2,'w'],[5,2,'w'],[6,2,'w']]] },
+  { id: 'cyber-oni', nombre: 'Máscara oni', tipo: 'claude-code-guide',
+    ref: ['Pandillas callejeras con máscara oni (Night City)', 'https://cyberpunk.fandom.com/wiki/Mantis_Blades'],
+    que: 'Máscara roja con cuernos y colmillos. El neón de los ojos parpadea y cruza un glitch rosa.',
+    rows: ['h.......h', '.h.rrr.h.', '.rrrrrrr.', 'rryyryyrr', '.rrrRrrr.', '.rkwkwkr.', '..rkkkr..', '...rrr...'],
+    frames: [[], [[2,3,'o'],[3,3,'o'],[5,3,'o'],[6,3,'o']], [[1,4,'m'],[2,4,'m'],[3,4,'m'],[5,4,'m'],[6,4,'m'],[7,4,'m']], [[2,3,'w'],[6,3,'w']]] },
+  { id: 'cyber-gato', nombre: 'Gato ciborg', tipo: 'general-purpose',
+    ref: ['Revisado: orejas rosadas, bigotes, collar y cola de fibra', ''],
+    que: 'Gato gris acero con bigotes y collar con placa. Parpadea, mueve la cola y brilla el implante.',
+    rows: ['.S.....S.', '.Sm...mS.', '.SSSSSSS.', '.SnSSsmS.', 'wSSSMSSSw', '..nnynn..', '.SSSSSSSn', '..SS.SS.n'],
+    frames: [[], [[2,3,'S']], [[8,7,'.'],[8,5,'n']], [[6,3,'w']]] },
+].map(s => ({ ...s, pal: PAL, cangrejo: false }));
+
+/* Banca: alternativas para cambiar por cualquiera de los 7. */
+const BANCA = [
+  { id: 'cyber-ojo', nombre: 'Ojo óptico', tipo: 'banca',
+    ref: ['Ópticos de Cyberpunk 2077', 'https://www.rpgsite.net/feature/10602-cyberpunk-2077-21-cyberware-list-best-cyberware-where-to-get-legendary-cyberware-in-phantom-liberty'],
+    que: 'Un ojo de cromo. La pupila se dilata, el iris escanea en amarillo y el párpado baja.',
+    rows: ['..SSSSS..', '.SwwwwwS.', 'SwwnnnwwS', 'SwnnknnwS', 'SwwnnnwwS', '.SwwwwwS.', '..SSSSS..', '...SsS...'],
+    frames: [[], [[3,3,'k'],[5,3,'k']], [[3,2,'y'],[4,2,'y'],[5,2,'y'],[2,3,'y'],[6,3,'y'],[3,4,'y'],[4,4,'y'],[5,4,'y']], [[2,1,'S'],[3,1,'S'],[4,1,'S'],[5,1,'S'],[6,1,'S'],[1,2,'S'],[2,2,'S'],[6,2,'S'],[7,2,'S']]] },
+  { id: 'cyber-replicante', nombre: 'Replicante', tipo: 'banca',
+    ref: ['Gabardina y ojos que brillan, Blade Runner', 'https://shotkit.com/cyberpunk-aesthetic/'],
+    que: 'Gabardina de cuello alto bajo la lluvia. Los ojos brillan en naranja un instante.',
+    rows: ['..kkkkk..', '.kkfffkk.', '..fffff..', '..fkfkf..', '..fffff..', '.EE.f.EE.', 'EEEEdEEEE', 'EEEEdEEEE'],
+    frames: [[], [[3,3,'o'],[5,3,'o']], [[0,0,'N'],[8,2,'N'],[0,4,'N']], [[0,1,'N'],[8,3,'N'],[0,5,'N']]] },
+  { id: 'cyber-gas', nombre: 'Punk con máscara de gas', tipo: 'banca',
+    ref: ['Estética «high tech, low life»', 'https://gifpaper.com/aesthetics/cyberpunk-aesthetic/'],
+    que: 'Cresta de púas y máscara de gas con lentes cian. Las lentes brillan y el filtro suelta humo.',
+    rows: ['..m.m.m..', '..mmmmm..', '.KKKKKKK.', '.KnnKnnK.', '.KKKKKKK.', '..KsSsK..', '..KSSSK..', '.ooooooo.'],
+    frames: [[], [[2,3,'w'],[5,3,'w']], [[7,6,'s'],[8,5,'w']], [[3,3,'N'],[6,3,'N'],[8,4,'s']]] },
+].map(s => ({ ...s, pal: PAL, cangrejo: false }));
+
+const CALAVERA = { ...CYBER.find(x => x.id === 'cyber-calavera'), nombre: 'Calavera servo', tipo: 'barra y agentes caídos',
+  que: 'Flota en la punta de la barra y escanea con su óptico rojo. Cuando un agente falla, toma su lugar en el panel.' };
+const CANGREJO_BARRA = { id: 'otro', rows: ['.........', '.........', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.ccccccc.'], frames: [[], [], [], []], pal: SAVVY_PAL, cangrejo: true };
+/* Trajes del autor, tal como están en el mod (MINI_COSTUMES). */
+const AUTOR_PAL = { ...SAVVY_PAL, G: '#E6E8EE', g: '#C9CCD2', p: '#7F77DD', K: '#55514C', Z: '#F5C542' };
+const ASTRONAUTA = { id: 'fable', nombre: 'Astronauta', rows: ['....p...Z', '.GGGGGGG.', 'GcccccccG', 'GckccckcG', 'ccccccccc', 'GccppcccG'],
+  frames: [[], [[8,0,'.']], [], [[8,0,'.']]], pal: AUTOR_PAL, cangrejo: true };
+const PIRATA = { id: 'explore', nombre: 'Pirata', rows: ['.K.KKK.K.', '.KKKKKKK.', '.ZZZZZZZ.', '.ckcckkc.', 'ccccccccs', '.ccccccc.'],
+  frames: [[], [[8,4,'c'],[8,3,'s']], [], [[8,4,'c'],[8,3,'s']]], blinks: false, pal: AUTOR_PAL, cangrejo: true };
+/* Reparto del clásico por frecuencia (D7): tus favoritos arriba. */
+const REPARTO_CLASICO = {
+  'general-purpose': ASTRONAUTA,
+  explorador: PIRATA,
+  fork: { ...SAVVY.find(x => x.tipo === 'general-purpose'), tipo: 'fork' },
+  Explore: { ...SAVVY.find(x => x.tipo === 'explorador'), tipo: 'Explore' },
+};
+
+/* Candidatos del estilo clásico para revisor y claude-code-guide. */
+const HOY_REV = { ...SAVVY.find(x => x.tipo === 'revisor'), nombre: 'Hoy · Juez', que: 'Peluca blanca y mazo: lo levanta y golpea.' };
+const HOY_GUIA = { ...SAVVY.find(x => x.tipo === 'claude-code-guide'), nombre: 'Hoy · Profesor', que: 'Birrete y libro: la borla se mueve.' };
+const CAND_REV = [
+  { id: 'savvy-arbitro', nombre: 'Árbitro', tipo: 'revisor',
+    que: 'Gorra gris, camiseta a rayas y silbato. Saca la amarilla, pita, entrecierra los ojos y saca la roja.',
+    rows: ['.........', '..KKKKK..', '.ccccccc.', '.ckccckc.', 'ccccscccc', '.kwkwkwk.'],
+    frames: [[], [[8,3,'y'],[8,2,'y']], [[5,4,'w'],[6,4,'W']], [[8,3,'r'],[8,2,'r'],[2,3,'c'],[3,3,'k'],[6,3,'c'],[7,3,'k']]] },
+  { id: 'savvy-pirata-loro', nombre: 'Pirata con loro', tipo: 'revisor',
+    que: 'Pañoleta roja, parche, arete de oro y un loro en el hombro. El loro grazna, el pirata mira de reojo y el loro picotea.',
+    rows: ['..rrrrr..', '.rrrrrrR.', '.cccccccr', 'ykkccckcl', 'ccccccccc', '.ccccccc.'],
+    frames: [[], [[8,1,'r'],[8,2,'y']], [[6,3,'c'],[7,3,'k']], [[8,1,'r'],[8,2,'y'],[6,3,'c'],[7,3,'k']]], blinks: false },
+  { id: 'savvy-critico', nombre: 'Crítico con monóculo', tipo: 'revisor',
+    que: 'Sombrero de copa, bigote y monóculo con cadena. Brilla el monóculo, sube una ceja y, del asombro, se le cae.',
+    rows: ['..KKKKK..', '.KKKKKKK.', '.ccccccc.', '.ckcccBc.', 'ccckkkcyc', '.ccccccc.'],
+    frames: [[], [[6,3,'w']], [[2,2,'k']], [[2,2,'k'],[6,3,'k'],[7,5,'B']]], blinks: false },
+].map(x => ({ ...x, pal: SAVVY_PAL, cangrejo: true }));
+const CAND_GUIA = [
+  { id: 'savvy-farero', nombre: 'Farero', tipo: 'claude-code-guide',
+    que: 'Sombrero de lluvia amarillo, pipa y farol. El farol alumbra el camino y la pipa suelta humo.',
+    rows: ['..yyyyy..', '.YYYYYYYY', '.ccccccc.', 'dckccckc.', 'ccccccccs', '.cccccccy'],
+    frames: [[], [[8,5,'w'],[8,6,'y'],[0,2,'W']], [[0,1,'W']], [[8,5,'Y'],[0,0,'W']]] },
+  { id: 'savvy-astro-guia', nombre: 'Astronauta guía', tipo: 'claude-code-guide',
+    que: 'Traje naranja retro y casco de pecera, con la guía de la galaxia en la pinza. El libro brilla y el reflejo del casco se mueve.',
+    rows: ['..BBBBB..', '.BwBBBBB.', 'oBcccccBo', 'ockccckco', 'ccccccccL', '.oooooool'],
+    frames: [[], [[8,4,'w']], [[2,1,'B'],[5,1,'w']], [[8,4,'L'],[8,3,'L']]] },
+  { id: 'savvy-sherpa', nombre: 'Sherpa', tipo: 'claude-code-guide',
+    que: 'Gorro de lana con pompón, bufanda y bastón. Echa vaho por el frío, levanta el bastón y la bufanda ondea.',
+    rows: ['....w....', '.rRrRrRr.', '.ccccccc.', '.ckccckcd', 'ccccccccd', '.mmmmmmmd'],
+    frames: [[], [[0,3,'W']], [[8,3,'.'],[8,2,'d'],[8,5,'.']], [[0,5,'m'],[0,6,'m']]] },
+].map(x => ({ ...x, pal: SAVVY_PAL, cangrejo: true }));
+/* D8: trajes cyberpunk para fork y Explore. */
+const CROMO_PAL = { ...PAL, c: '#AEB4BC', W: '#E2E6EA', S: '#6B7079' };
+const CAND_FORK = [
+  { id: 'cyber-cromo', nombre: 'Cangrejo de cromo', tipo: 'fork', pal: CROMO_PAL,
+    que: 'Todo de metal, patas incluidas: es la copia exacta de la sesión. Un reflejo le recorre el cuerpo y los ojos destellan.',
+    rows: ['.........', '..SSSSS..', '.cWcccSc.', '.cncccnc.', 'ccccccccc', '.cSSSSSc.'],
+    frames: [[[2,2,'w']], [[4,2,'w'],[3,4,'w']], [[6,2,'w'],[5,4,'w'],[4,5,'W']], [[2,3,'w'],[6,3,'w']]], blinks: false },
+  { id: 'cyber-copia', nombre: 'Copia en curso', tipo: 'fork', pal: { ...PAL, W: '#E2E6EA' },
+    que: 'Mitad cangrejo, mitad cromo: el clon se está copiando. La línea de cromo avanza y retrocede.',
+    rows: ['.........', '.....nnn.', '.ccccsss.', '.ckccsns.', 'ccccsssss', '.ccccsss.'],
+    frames: [[], [[4,2,'s'],[4,3,'s'],[4,4,'s'],[4,5,'s'],[5,1,'W']], [[3,2,'s'],[4,2,'s'],[3,3,'s'],[4,3,'s'],[3,4,'s'],[4,4,'s'],[3,5,'s'],[4,5,'s'],[4,1,'n']], [[4,2,'s'],[4,3,'s'],[4,4,'s'],[4,5,'s']]], blinks: false },
+].map(x => ({ ...x, cangrejo: true }));
+const CAND_EXPLORE = [
+  { id: 'cyber-camuflaje', nombre: 'Camuflaje óptico', tipo: 'Explore', pal: PAL,
+    que: 'Busca sin que lo vean. Se vuelve silueta, desaparece hasta que solo le brillan los ojos y reaparece por mitades.',
+    rows: ['.........', '...NNN...', '.ccccccc.', '.ckccckc.', 'ccccccccc', '.ccccccc.'],
+    frames: [[],[[0,4,'N'],[1,2,'N'],[1,3,'N'],[1,4,'.'],[1,5,'N'],[2,2,'N'],[2,3,'n'],[2,4,'.'],[2,5,'N'],[3,2,'N'],[3,3,'.'],[3,4,'.'],[3,5,'N'],[4,2,'N'],[4,3,'.'],[4,4,'.'],[4,5,'N'],[5,2,'N'],[5,3,'.'],[5,4,'.'],[5,5,'N'],[6,2,'N'],[6,3,'n'],[6,4,'.'],[6,5,'N'],[7,2,'N'],[7,3,'N'],[7,4,'.'],[7,5,'N'],[8,4,'N'],[1,6,'N'],[3,6,'N'],[5,6,'N'],[7,6,'N'],[1,7,'.'],[3,7,'.'],[5,7,'.'],[7,7,'.'],[3,1,'.'],[4,1,'.'],[5,1,'.']],[[0,4,'.'],[1,2,'.'],[1,3,'.'],[1,4,'.'],[1,5,'.'],[2,2,'.'],[2,3,'n'],[2,4,'.'],[2,5,'.'],[3,2,'.'],[3,3,'.'],[3,4,'.'],[3,5,'.'],[4,2,'.'],[4,3,'.'],[4,4,'.'],[4,5,'.'],[5,2,'.'],[5,3,'.'],[5,4,'.'],[5,5,'.'],[6,2,'.'],[6,3,'n'],[6,4,'.'],[6,5,'.'],[7,2,'.'],[7,3,'.'],[7,4,'.'],[7,5,'.'],[8,4,'.'],[1,6,'.'],[3,6,'.'],[5,6,'.'],[7,6,'.'],[1,7,'.'],[3,7,'.'],[5,7,'.'],[7,7,'.'],[3,1,'.'],[4,1,'.'],[5,1,'.']],[[5,2,'N'],[5,3,'.'],[5,4,'.'],[5,5,'N'],[6,2,'N'],[6,3,'n'],[6,4,'.'],[6,5,'N'],[7,2,'N'],[7,3,'N'],[7,4,'.'],[7,5,'N'],[8,4,'N'],[5,6,'N'],[7,6,'N'],[5,7,'.'],[7,7,'.'],[5,1,'.']]], blinks: false },
+  { id: 'cyber-noir', nombre: 'Detective noir', tipo: 'Explore', pal: PAL,
+    que: 'Sombrero con cinta de neón, gabardina y cigarrillo. El humo sube, la brasa se aviva y la cinta parpadea.',
+    rows: ['..SmmmS..', 'SSSSSSSSS', '.ccccccc.', '.ckccckco', 'ccccccccc', '.EEcccEE.'],
+    frames: [[], [[8,2,'s']], [[8,3,'y'],[2,3,'c'],[3,3,'k'],[6,3,'c'],[7,3,'k']], [[8,2,'s'],[3,0,'M'],[4,0,'M'],[5,0,'M']]] },
+].map(x => ({ ...x, cangrejo: true }));
+let probarFork = CAND_FORK[0], probarExplore = CAND_EXPLORE[0];
+let probarRev = CAND_REV.find(x => x.id === 'savvy-arbitro'), probarGuia = CAND_GUIA.find(x => x.id === 'savvy-farero');
+
+const FRAME_MS = 250;
+
+/* Pixeles de un cuadro: filas base + cambios del cuadro + patas si es cangrejo. */
+function pixeles(s, k, camina) {
+  const g = s.rows.map(r => r.split(''));
+  if (s.cangrejo && g.length === 6) {
+    g.push(LEGS.split(''));
+    g.push((camina ? LIFTED[k % 2] : LEGS).split(''));
+  }
+  for (const [x, y, ch] of (s.frames[k % 4] || [])) if (g[y]) g[y][x] = ch;
+  if (s.cangrejo && s.blinks !== false && k % 12 === 11) { g[3][2] = 'c'; g[3][6] = 'c'; }
+  return g;
+}
+function pintar(cv, s, k, px, camina = true) {
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const g = pixeles(s, k, camina);
+  g.forEach((fila, y) => fila.forEach((ch, x) => {
+    if (ch === '.' || !s.pal[ch]) return;
+    ctx.fillStyle = s.pal[ch];
+    ctx.fillRect(x * px, y * px, px, px);
+  }));
+}
+function lienzo(px) {
+  const cv = document.createElement('canvas');
+  cv.width = 9 * px; cv.height = 8 * px;
+  return cv;
+}
+
+/* Panel */
+/* En orden de frecuencia real (333 agentes desde el 2026-07-27). */
+const AGENTES = [
+  ['general-purpose', 'sonnet', 'medium', 'Paso 3 de 6 · 44 %'],
+  ['revisor', 'opus', 'high', 'Revisando el diff · 33 %'],
+  ['explorador', 'haiku', 'low', 'Leyendo register.tsx · 9 %'],
+  ['ejecutor', 'sonnet', 'medium', 'Editando 4 archivos · 5 %'],
+  ['fork', 'opus', 'xhigh', 'Revisando la rebanada · 4 %'],
+  ['Plan', 'opus', 'xhigh', 'Partiendo en rebanadas · 2 %'],
+  ['Explore', 'haiku', 'low', 'Buscando archivos · 1 %'],
+  ['claude-code-guide', 'haiku', 'low', 'Buscando en la guía · 1 %'],
+  ['consejero', 'opus', 'xhigh', 'Voz 2 de 3 · 1 %'],
+];
+let estilo = 'clasico', fallo = false;
+const vivos = [];
+function setActual() {
+  if (estilo === 'clasico') {
+    const base = SAVVY.map(x => x.tipo === 'revisor' && probarRev ? probarRev : x.tipo === 'claude-code-guide' && probarGuia ? probarGuia : x);
+    return [...base.filter(x => !REPARTO_CLASICO[x.tipo]), ...Object.entries(REPARTO_CLASICO).map(([tipo, t]) => ({ ...t, tipo }))];
+  }
+  return [...CYBER_CANGREJO, { ...probarFork, tipo: 'fork' }, { ...probarExplore, tipo: 'Explore' }];
+}
+function armarPanel() {
+  const cont = document.getElementById('agentes');
+  cont.innerHTML = '';
+  vivos.length = 0;
+  const set = setActual();
+  AGENTES.forEach(([tipo, modelo, esfuerzo, estadoBase]) => {
+    let estado = estadoBase;
+    const cae = fallo && tipo === 'revisor';
+    const s = cae && estilo === 'cyber' ? CALAVERA : (set.find(x => x.tipo === tipo) || CANGREJO_BARRA);
+    if (cae) estado = '✗ error · no pudo leer el diff';
+    const fila = document.createElement('div');
+    fila.className = 'agente';
+    const cv = lienzo(7);
+    cv.style.width = '63px'; cv.style.height = '56px';
+    const caja = document.createElement('div'); caja.className = 'vivo'; caja.appendChild(cv);
+    fila.appendChild(caja);
+    fila.insertAdjacentHTML('beforeend', `<span class="tipo">${tipo}</span><span class="dim">${modelo}</span><span class="dim">${esfuerzo}</span><span class="estado">${estado}</span>`);
+    cont.appendChild(fila);
+    vivos.push({ cv, s, px: 7 });
+  });
+  document.getElementById('term').classList.toggle('cyber', estilo === 'cyber');
+  document.getElementById('panel-crew').textContent = estilo === 'clasico' ? 'cuadrilla savvy' : 'cuadrilla cyber-cangrejo';
+  document.getElementById('e-clasico').setAttribute('aria-pressed', estilo === 'clasico');
+  document.getElementById('e-cyber').setAttribute('aria-pressed', estilo === 'cyber');
+  document.getElementById('fallo').setAttribute('aria-pressed', fallo);
+}
+document.getElementById('e-clasico').onclick = () => { estilo = 'clasico'; armarPanel(); };
+document.getElementById('e-cyber').onclick = () => { estilo = 'cyber'; armarPanel(); };
+document.getElementById('fallo').onclick = () => { fallo = !fallo; armarPanel(); };
+
+/* Barra de la tanda: la barra ocupa 22 px abajo; el sprite de la punta flota encima. */
+const barra = document.getElementById('barra');
+const bctx = barra.getContext('2d');
+const BW = barra.width, BH = 22, OY = barra.height - 22, P = 3, LLENO = 0.43;
+const gotas = Array.from({ length: 26 }, (_, i) => ({ x: Math.floor((i * 37) % Math.floor(BW * LLENO / P)), y: (i * 7) % 8, v: 1 + (i % 3) }));
+function spriteEn(s, k, x, y, px) {
+  const g = pixeles(s, k, false);
+  g.forEach((fila, yy) => fila.forEach((ch, xx) => {
+    if (ch === '.' || !s.pal[ch]) return;
+    bctx.fillStyle = s.pal[ch];
+    bctx.fillRect(x + xx * px, y + yy * px, px, px);
+  }));
+}
+function pintarBarra(k) {
+  bctx.clearRect(0, 0, BW, barra.height);
+  const filas = Math.floor(BH / P), cols = Math.floor(BW / P), llenas = Math.floor(cols * LLENO);
+  const punta = llenas * P;
+  if (estilo === 'clasico') {
+    bctx.fillStyle = '#2c2c2c'; bctx.beginPath(); bctx.roundRect(0, OY, BW, BH, BH / 2); bctx.fill();
+    bctx.save(); bctx.beginPath(); bctx.roundRect(0, OY, BW, BH, BH / 2); bctx.clip();
+    for (let x = 0; x < llenas; x++) for (let y = 0; y < filas; y++) {
+      const fase = Math.sin((k * 0.5) + x * 1.7 + y * 2.3);
+      bctx.fillStyle = fase > 0.6 ? '#F0A07E' : '#D97757';
+      bctx.fillRect(x * P, OY + y * P, P - 0.5, P - 0.5);
+    }
+    bctx.restore();
+    spriteEn(SAVVY.find(x => x.tipo === 'consejero'), k, punta - 2, OY - 6 + (Math.floor(k / 2) % 2), 3);
+  } else {
+    bctx.fillStyle = '#120b1c'; bctx.fillRect(0, OY, BW, BH);
+    bctx.strokeStyle = '#ff2e88'; bctx.lineWidth = 1; bctx.strokeRect(0.5, OY + 0.5, BW - 1, BH - 1);
+    for (let x = 0; x < llenas; x++) {
+      const t = x / llenas;
+      const r = Math.round(255 * (1 - t)), g = Math.round(46 * (1 - t) + 229 * t), b = Math.round(136 * (1 - t) + 255 * t);
+      for (let y = 0; y < filas; y++) {
+        bctx.fillStyle = `rgba(${r},${g},${b},${0.22 + 0.1 * (y % 2)})`;
+        bctx.fillRect(x * P, OY + y * P, P - 0.5, P - 0.5);
+      }
+    }
+    for (const d of gotas) {
+      const y = (d.y + Math.floor(k * d.v / 2)) % (filas + 3);
+      for (let j = 0; j < 3; j++) {
+        const yy = y - j; if (yy < 0 || yy >= filas || d.x >= llenas) continue;
+        bctx.fillStyle = j === 0 ? '#ffffff' : (j === 1 ? '#00e5ff' : 'rgba(0,229,255,.45)');
+        bctx.fillRect(d.x * P, OY + yy * P, P - 0.5, P - 0.5);
+      }
+    }
+    if (k % 16 === 0) { bctx.fillStyle = 'rgba(252,238,10,.85)'; bctx.fillRect((k * 13 % llenas) * P, OY + P * 2, P * 6, P); }
+    /* Haz del óptico: barre lo que falta, de cerca a lejos. */
+    const largo = 6 + (k % 8) * 3;
+    for (let i = 0; i < largo; i++) {
+      bctx.fillStyle = `rgba(255,59,59,${0.5 * (1 - i / largo)})`;
+      bctx.fillRect(punta + 30 + i * P, OY + 6 + (i % 2), P - 0.5, P - 0.5);
+    }
+    const flota = (Math.floor(k / 2) % 2);
+    spriteEn(CALAVERA, k, punta + 2, OY - 6 + flota * 2, 3);
+  }
+}
+
+/* Hojas de contacto */
+function armarHojas(id, set, opciones) {
+  const cont = document.getElementById(id);
+  set.forEach(s => {
+    const h = document.createElement('div');
+    h.className = 'hoja';
+    const ref = s.ref ? (s.ref[1] ? `<p class="ref">Inspiración: <a href="${s.ref[1]}" target="_blank" rel="noopener">${s.ref[0]}</a></p>` : `<p class="ref">${s.ref[0]}</p>`) : '';
+    h.innerHTML = `<div class="hoja-cab"><h3>${s.nombre}</h3><code>${s.tipo}</code></div><p class="nota">${s.que}</p>${ref}`;
+    const cuadros = document.createElement('div'); cuadros.className = 'cuadros';
+    for (let k = 0; k < 4; k++) {
+      const c = document.createElement('div'); c.className = 'cuadro';
+      const cv = lienzo(10); pintar(cv, s, k, 10, false);
+      c.appendChild(cv); c.insertAdjacentHTML('beforeend', `<span>${k + 1}</span>`);
+      cuadros.appendChild(c);
+    }
+    const v = document.createElement('div'); v.className = 'cuadro vivo';
+    const cv = lienzo(10); v.appendChild(cv); v.insertAdjacentHTML('beforeend', '<span>en vivo</span>');
+    cuadros.appendChild(v);
+    vivos.push({ cv, s, px: 10, fijo: true });
+    h.appendChild(cuadros);
+    if (opciones && opciones.probar) {
+      const b = document.createElement('button'); b.className = 'boton'; b.type = 'button'; b.id = 'probar-' + s.id;
+      b.textContent = 'Probar en el panel';
+      b.onclick = () => { opciones.probar(s); estilo = opciones.estilo || 'clasico'; armarPanel(); marcarProbados(); document.getElementById('s-panel').scrollIntoView({ behavior: 'smooth' }); };
+      h.appendChild(b);
+    }
+    cont.appendChild(h);
+  });
+}
+armarPanel();
+const fijos = [];
+armarHojas('hojas-cangrejo', CYBER_CANGREJO);
+armarHojas('hojas-calavera', [CALAVERA]);
+armarHojas('hojas-rev', [HOY_REV, ...CAND_REV], { probar: x => { probarRev = x.id === HOY_REV.id ? null : x; } });
+armarHojas('hojas-guia', [HOY_GUIA, ...CAND_GUIA], { probar: x => { probarGuia = x.id === HOY_GUIA.id ? null : x; } });
+armarHojas('hojas-fork', CAND_FORK, { probar: x => { probarFork = x; }, estilo: 'cyber' });
+armarHojas('hojas-explore', CAND_EXPLORE, { probar: x => { probarExplore = x; }, estilo: 'cyber' });
+function marcarProbados() {
+  document.querySelectorAll('[id^="probar-"]').forEach(b => {
+    const id = b.id.slice(7);
+    const activo = (probarRev ? probarRev.id : HOY_REV.id) === id || (probarGuia ? probarGuia.id : HOY_GUIA.id) === id || probarFork.id === id || probarExplore.id === id;
+    b.setAttribute('aria-pressed', activo); b.textContent = activo ? 'En el panel ✓' : 'Probar en el panel';
+  });
+}
+marcarProbados();
+vivos.filter(v => v.fijo).forEach(v => fijos.push(v));
+
+const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let k = 0;
+function tic() {
+  const todos = [...vivos.filter(v => !v.fijo), ...fijos];
+  todos.forEach(v => pintar(v.cv, v.s, k, v.px));
+  pintarBarra(k);
+  k = (k + 1) % 48;
+}
+tic();
+if (!quieto) setInterval(tic, FRAME_MS);
+</script>
