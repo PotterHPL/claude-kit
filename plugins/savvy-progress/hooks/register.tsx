@@ -40,6 +40,13 @@ const MAX_AFTER = 20
 const MAX_TITLE = 120
 const ACCENT = '#8f8cf4'
 const DONE = '#5fbf8f'
+// The cyberpunk style's accents (D1): neon pink while working, cyan once finished.
+const NEON = '#ff2e88'
+const NEON_DONE = '#00e5ff'
+const ACCENT_CLASSIC = ACCENT
+const DONE_CLASSIC = DONE
+const accentOf = (f: { isFinished: boolean }): string =>
+  estilo === 'cyberpunk' ? (f.isFinished ? NEON_DONE : NEON) : f.isFinished ? DONE_CLASSIC : ACCENT_CLASSIC
 
 type ProgressInput = {
   title?: string
@@ -344,7 +351,7 @@ const rowSvg = (f: Flow, W: number, isWorking: boolean): string => {
   const title = fitText(f.title, 13, Math.max(60, W * 0.4))
   const BAR_X = Math.round(16 + textWidth(title, 13) + 12)
   const BAR_W = Math.max(60, W - BAR_X - 46 - CRAB_W)
-  const color = f.isFinished ? DONE : ACCENT
+  const color = accentOf(f)
   const y0 = (H - BAR_H) / 2
   const fillW = Math.round(BAR_W * ratio(f))
   const runW = f.total ? Math.round((BAR_W * Math.min(f.total, f.done + f.running)) / f.total) : 0
@@ -411,7 +418,7 @@ const rowSvg = (f: Flow, W: number, isWorking: boolean): string => {
 <text x="${pillX + pillW / 2}" y="${BAR_H / 2 + 4}" text-anchor="middle"${rtl ? ' direction="rtl"' : ''} font-family="${FONT}" font-size="11" font-weight="600" fill="#ffffff">${xml(text)}</text>
 </g>
 <text class="m" ${percentAt} font-family="${FONT}" font-size="12.5" font-variant-numeric="tabular-nums">${percent}</text>
-${CRAB_CSS}${crab(rx(W - CRAB_W + 1, crabW), 0, 'other', false, isWorking, 0.8, rtl)}
+${CRAB_CSS}${crab(rx(W - CRAB_W + 1, crabW), 0, bandMascot ? mascotOf() : 'other', false, isWorking, 0.8, rtl)}
 </svg>`
 }
 
@@ -424,13 +431,20 @@ const BAND_TICK = 0x5a5a68
 const BAND_TEXT = 0xffffff
 const SPARKLES = ['⠁⡀⠄⠂', '⠂⠁⡀⠄']
 
-const bandTrackCells = (f: Flow, width: number, frame: number): Cells => {
-  const accent = hex(f.isFinished ? DONE : ACCENT)
+const NEON_TRACK = 0x1a1024
+const NEON_TICK = 0x5a2a4a
+const RAIN = [0x00e5ff, 0x0a7f96]
+
+const bandTrackCells = (f: Flow, width: number, tick: number): Cells => {
+  const accent = hex(accentOf(f))
+  const isNeon = estilo === 'cyberpunk'
+  const trackColor = isNeon ? NEON_TRACK : BAND_TRACK
+  const tickColor = isNeon ? NEON_TICK : BAND_TICK
   const cells: [number, number, number][] = []
   const put = (s: string, fg: number, bg = DEFAULT_COLOR) => {
     for (const ch of s) cells.push([ch.codePointAt(0) ?? 0x20, fg, bg])
   }
-  put(SPARKLES[frame % 2] ?? '', accent)
+  put(SPARKLES[tick % 2] ?? '', accent)
   put(' ', accent)
   const w = Math.max(4, width - cells.length)
   const text = ` ${label(f)} `
@@ -439,8 +453,11 @@ const bandTrackCells = (f: Flow, width: number, frame: number): Cells => {
   for (let x = 0; x < w; x++) {
     if (x === 0) put('▐', accent)
     else if (x < filled - 1) put(text[x - 1] ?? ' ', BAND_TEXT, accent)
-    else if (x === filled - 1) put('▌', accent, BAND_TRACK)
-    else put(ticks.has(x) ? '│' : ' ', BAND_TICK, BAND_TRACK)
+    else if (x === filled - 1) put('▌', accent, trackColor)
+    else if (ticks.has(x)) put('│', tickColor, trackColor)
+    // Rain: two of every five cells carry a falling braille dot, a row a second.
+    else if (isNeon && (x * 7) % 5 < 2) put(String.fromCodePoint(0x2800 + (BRAILLE_BIT[x & 1]?.[(tick + x * 3) % 4] ?? 0)), RAIN[x % 2] ?? 0x00e5ff, trackColor)
+    else put(' ', tickColor, trackColor)
   }
   return textCells(cells, cells.length)
 }
@@ -455,6 +472,12 @@ const BRAILLE_BIT = [
   [0x08, 0x10, 0x20, 0x80],
 ]
 const BAND_SPIN_KEY = 'band-spin'
+// The band's mascot (D10): at the end of the band, four rows tall, while agents work. The wizard in the
+// classic style (D9), the servo skull in cyberpunk (D5). The `bandMascot` option turns it off.
+const BAND_MASCOT_KEY = 'band-mascot'
+const MASCOT_MIN_COLUMNS = 60
+let bandMascot = true
+const mascotOf = (): string => (estilo === 'cyberpunk' ? 'cyber-calavera' : 'savvy-mago')
 // The band's own id, as its render hook last saw it: what a blit names to repaint the spinner.
 let bandRequestId = ''
 
@@ -1280,6 +1303,7 @@ async function autoOpen($: EngineInterface, key: string): Promise<void> {
 
 export const register: Register = (on, options) => {
   crabMode = crabModeOf(options.terminalCrabs)
+  bandMascot = options.bandMascot !== 'off'
   agentTiers = agentTiersOf(options.costumes)
   on('session.start', async ($, e, next) => {
     const started = await next(e)
@@ -1370,6 +1394,10 @@ export const register: Register = (on, options) => {
         if (bandRequestId) {
           const { cells } = spinnerCells(Math.floor(ms / FRAME_MS) % SPIN_PATH.length)
           await $.ui.blit({ requestId: bandRequestId, key: BAND_SPIN_KEY, cells }).catch(() => undefined)
+          if (bandMascot) {
+            const mascot = crabCells(mascotOf(), frameAt(ms), true).cells
+            await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascot }).catch(() => undefined)
+          }
         }
         if (crabMode === 'off') return
         const k = frameAt(ms)
@@ -1872,26 +1900,38 @@ export const register: Register = (on, options) => {
     // Where the terminal has a Raster: the desktop's band, cell by cell.
     if (e.surface === 'terminal' && 'Raster' in ui) {
       const { Raster } = ui
-      const frame = Math.floor((await read($, now)) / 1000) % 2
-      const trackW = Math.max(12, cols - titleW - 22)
-      const track = bandTrackCells(f, trackW, frame)
+      const nowMs = await read($, now)
+      const hasMascot = bandMascot && cols >= MASCOT_MIN_COLUMNS
+      const trackW = Math.max(12, cols - titleW - 22 - (hasMascot ? ROW_CRAB.columns + 1 : 0))
+      const track = bandTrackCells(f, trackW, Math.floor(nowMs / 1000))
       bandRequestId = e.requestId
       const spin = spinnerCells(isWorking ? Math.floor((await read($, now)) / FRAME_MS) % SPIN_PATH.length : null)
+      const row = (
+        <Box flexDirection="row" gap={1}>
+          <Box width={titleW} flexShrink={0}>
+            <Text color={accentOf(f)}>● </Text>
+            <Text bold wrap="truncate-end">
+              {f.title}
+            </Text>
+          </Box>
+          <Raster key="band-track" columns={track.columns} rows={1} cells={track.cells} />
+          <Text dimColor>{percent}</Text>
+          <Raster key={BAND_SPIN_KEY} columns={spin.columns} rows={1} cells={spin.cells} />
+          {crewButton}
+          {!isBatch && dismiss}
+        </Box>
+      )
+      const mascot = crabCells(mascotOf(), isWorking ? frameAt(nowMs) : null, true)
       return (
         <Box flexDirection="column">
-          <Box flexDirection="row" gap={1}>
-            <Box width={titleW} flexShrink={0}>
-              <Text color={f.isFinished ? DONE : ACCENT}>● </Text>
-              <Text bold wrap="truncate-end">
-                {f.title}
-              </Text>
+          {hasMascot ? (
+            <Box flexDirection="row" alignItems="center" gap={1}>
+              {row}
+              <Raster key={BAND_MASCOT_KEY} columns={ROW_CRAB.columns} rows={ROW_CRAB.rows} cells={mascot.cells} />
             </Box>
-            <Raster key="band-track" columns={track.columns} rows={1} cells={track.cells} />
-            <Text dimColor>{percent}</Text>
-            <Raster key={BAND_SPIN_KEY} columns={spin.columns} rows={1} cells={spin.cells} />
-            {crewButton}
-            {!isBatch && dismiss}
-          </Box>
+          ) : (
+            row
+          )}
           {below}
         </Box>
       )
@@ -1900,10 +1940,10 @@ export const register: Register = (on, options) => {
       <Box flexDirection="column">
         <Box flexDirection="row" gap={2}>
           <Box width={titleW} flexShrink={0}>
-            <Text color={f.isFinished ? DONE : ACCENT}>● </Text>
+            <Text color={accentOf(f)}>● </Text>
             <Text wrap="truncate-end">{f.title}</Text>
           </Box>
-          <Text color={f.isFinished ? DONE : ACCENT}>{barText(f, width)}</Text>
+          <Text color={accentOf(f)}>{barText(f, width)}</Text>
           <Text bold>{label(f)}</Text>
           <Text dimColor>{percent}</Text>
           <Text color={CLAY}>▣</Text>

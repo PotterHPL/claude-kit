@@ -6,11 +6,10 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 `docs/plan-savvy-progress.md` (mascotas) y `docs/plan-avance-rebanadas.md` (barra de avance).
 
 ## Relevo
-- Avance: 2 de 4 rebanadas aceptadas (50 %).
-- R1 aceptada (2026-11-19, PR #16). R2 aceptada (2026-11-19, PR #17): JD vio astronauta, árbitro, pirata y farero.
-- R3 en revisión: cromo en fork, camuflaje en Explore y la calavera en los caídos (cyberpunk). 70 pruebas pasan.
-  Siguiente: JD la ve con `/reload-plugins` y `/estilo cyberpunk`; con su sí, R4 (empieza probando la barra de 4 filas
-  a 80 columnas, como sugirió el consejero).
+- Avance: 3 de 4 rebanadas aceptadas (75 %).
+- R1 (PR #16), R2 (PR #17) y R3 (PR #18) aceptadas el 2026-11-19. En R3, JD vio el cromo, el camuflaje y la calavera.
+- R4 en revisión: barra de 4 líneas con el mago o la calavera (`bandMascot`), acentos neón y lluvia en cyberpunk,
+  versión `1.3.0-conaltura.1`. 77 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` en los dos estilos.
 - Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
 - Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
 - Video de D10: `TI/60-explicaciones/savvy-progress-conaltura/mascota-en-la-barra/`.
@@ -46,8 +45,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 |---|---|---|---|---|---|
 | R1 | /estilo cyberpunk viste a los agentes de neón | `feat/cuadrilla-neon-r1` | Claude | — | aceptada |
 | R2 | El astronauta y el pirata encabezan el panel | `feat/cuadrilla-neon-r2` | Claude | R1 | aceptada |
-| R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | en revisión |
-| R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | pendiente |
+| R3 | Un agente que falla se vuelve calavera | `feat/cuadrilla-neon-r3` | Claude | R1 | aceptada |
+| R4 | La barra crece con la calavera o el mago | `feat/cuadrilla-neon-r4` | Claude | R1, R3 | en revisión |
 
 **Archivos compartidos y su dueño.** Las cuatro tocan `hooks/register.tsx`: van en orden, ninguna en paralelo.
 `hooks/crews.test.ts` y este plan: R1. `README.md` del plugin: cada rebanada suma su parte, en orden.

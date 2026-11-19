@@ -73,3 +73,73 @@ test('band savvy: no flow, no band', { options: { band: 'savvy' } }, async ($, o
   const ui = await $.ui.mount({ plugin: 'savvy-progress', surface: 'terminal', ...BAND })
   expect(await ui.find({ type: 'Text', text: /Tasks/ })).toBeUndefined()
 })
+
+// --- Cuadrilla Neón, R4: la mascota de la barra y el neón ---
+const HOME = 'C:\\Users\\jd'
+async function sesionEstilo($: Engine, on: On, estilo: 'clasico' | 'cyberpunk', extra?: (on: On) => void) {
+  const reloj = mock.clock(on, { now: Date.parse('2026-10-10T02:00:00Z') })
+  mock.env(on, { LANG: 'en_US.UTF-8', USERPROFILE: HOME })
+  on('fs.read', (_, e) => {
+    if (e.path.replace(/\\/g, '/') !=='C:/Users/jd/.claude/estilo-cierre.txt') throw new Error(`ENOENT ${e.path}`)
+    return { value: estilo }
+  })
+  on('settings.read', async () => ({ value: {} }) as never)
+  on('session.start', async () => ({ cwd: '/repo' }) as never)
+  extra?.(on)
+  await $.session.start({ source: 'startup', cwd: '/repo', surface: 'terminal', isInteractive: true } as never)
+  await $.tool.call({ tool: 'mcp__savvy-progress__progress', title: 'Ship it', total: 4, done: 1, phase: 'delegate' } as never)
+  return reloj
+}
+const montar = ($: Engine, surface: 'terminal' | 'desktop', bodyColumns = 100) =>
+  $.ui.mount({ plugin: 'savvy-progress', surface, component: 'AbovePrompt', props: { ...(BAND.props as object), bodyColumns } as never })
+const braille = (t: string) => [...t].filter(c => c >= '\u2800' && c <= '\u28ff').length
+
+test('terminal: la barra lleva la mascota de 4 filas al final', async ($, on) => {
+  await sesionEstilo($, on, 'clasico')
+  const ui = await montar($, 'terminal')
+  const mascota = await ui.find({ type: 'Raster', key: 'band-mascot' })
+  expect(mascota).toBeDefined()
+  expect(mascota?.props.rows).toBe(4)
+})
+
+test('bandMascot off: la barra vuelve a una fila, sin mascota', { options: { bandMascot: 'off' } }, async ($, on) => {
+  await sesionEstilo($, on, 'cyberpunk')
+  const ui = await montar($, 'terminal')
+  expect(await ui.find({ type: 'Raster', key: 'band-mascot' })).toBeUndefined()
+  expect(await ui.find({ type: 'Raster', key: 'band-track' })).toBeDefined()
+})
+
+test('ventana angosta: la barra sale sin mascota', async ($, on) => {
+  await sesionEstilo($, on, 'clasico')
+  const ui = await montar($, 'terminal', 50)
+  expect(await ui.find({ type: 'Raster', key: 'band-mascot' })).toBeUndefined()
+})
+
+test('cyberpunk: la pista lleva lluvia de braille; el clásico no', async ($, on) => {
+  await sesionEstilo($, on, 'cyberpunk')
+  const ui = await montar($, 'terminal')
+  const pista = rasterText((await ui.find({ type: 'Raster', key: 'band-track' }))?.props.cells)
+  // El destello del inicio son 4 celdas braille; la lluvia suma más en lo que falta.
+  expect(braille(pista)).toBeGreaterThan(4)
+})
+
+test('clásico: la pista no lleva lluvia', async ($, on) => {
+  await sesionEstilo($, on, 'clasico')
+  const ui = await montar($, 'terminal')
+  const pista = rasterText((await ui.find({ type: 'Raster', key: 'band-track' }))?.props.cells)
+  expect(braille(pista)).toBe(4)
+})
+
+test('escritorio: la barra lleva el mago en clásico', async ($, on) => {
+  await sesionEstilo($, on, 'clasico')
+  const ui = await montar($, 'desktop')
+  const svg = String((await ui.find({ type: 'Svg' }))?.props.source).toUpperCase()
+  expect(svg).toContain('#B382FF')
+})
+
+test('escritorio: la barra lleva la calavera en cyberpunk', async ($, on) => {
+  await sesionEstilo($, on, 'cyberpunk')
+  const ui = await montar($, 'desktop')
+  const svg = String((await ui.find({ type: 'Svg' }))?.props.source).toUpperCase()
+  expect(svg).toContain('#E8E2CF')
+})
