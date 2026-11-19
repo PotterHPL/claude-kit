@@ -7,32 +7,8 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 (mascotas de Savvy Progress) está en `docs/plan-savvy-progress.md`.
 
 ## Relevo
-- **Avance:** 2 de 2 rebanadas aceptadas (100 %). **Proyecto cerrado (2026-11-18):** v0.2.0 en producción en el PC
-  de JD; ficha `avance-rebanadas` en `produccion`.
-- **Plan aprobado por JD (2026-11-18, `ti-plan`):** 2 rebanadas, solo la barra (D1 de JD: «construirla ya»; el panel
-  de todos los proyectos queda fuera).
-- **R1 en revisión (2026-11-18):** plugin `plugins/avance-rebanadas` (lector `hooks/plan.ts`, banda y `/avance` en
-  `hooks/register.tsx`), en el marketplace y en el README. `claude plugin validate` limpio; `claude plugin test` →
-  15 pasan, 0 fallan. Instalado en el PC de JD (`avance-rebanadas@claude-kit-conaltura`, alcance de usuario). Falta
-  que JD lo vea en su terminal: lo nuevo del motor en Windows (forma de `$.session.cwd`, rutas de `$.fs.read`) solo
-  se comprueba ahí.
-- **R1 aceptada por JD (2026-11-18):** vio la barra con `/avance mcp-proyectos-dwh` y funciona. PR #11 (fork) y #74
-  (wiki) fusionados.
-- **R2 en revisión (2026-11-18), v0.2.0:** `on('tool.call')` observa (siempre `next(e)` primero) y sigue el archivo
-  de Read, Edit, Write, Glob, Grep y NotebookEdit; `/avance <slug>` fijado manda. Aviso con `$.ui.toast` por cada
-  rebanada que pasa a aceptada (la primera lectura y el cambio de proyecto no avisan). Al 100 %, dorado y «lista para
-  entregar». `claude plugin test` → 23 pasan, 0 fallan; `validate` limpio. Hallazgo: en `claude plugin test` una
-  ruta relativa en `tool.call` no llega igual al mod (el motor la resuelve antes); se prueba `rutaAbsoluta` aparte y
-  en la sesión real Read y Edit usan rutas absolutas. 
-- **R2 aceptada por JD (2026-11-18):** vio la barra aparecer sola y el aviso al aceptar. PR #12 (fork) y #75 (wiki)
-  fusionados.
-- **Fuera del alcance, por si se retoma:** panel de todos los proyectos y barra por fases (Alertador, ConEmpeño).
-- **Decisiones activas:**
-  - **D1 (JD, 2026-11-18):** construir ya la barra de un proyecto; sin panel multiproyecto.
-  - El dato sale de la tabla `## Rebanadas` de `docs/plan.md` del proyecto (columna **Estado**), que `ti-plan` ya
-    exige. Los proyectos por fases (Alertador, ConEmpeño) no muestran barra.
-  - `/avance <slug>` encuentra el proyecto por `ruta_local` de su ficha (`50-conocimiento/proyectos/<slug>.md`).
-  - Se lee el archivo en disco, en la rama en que esté el repo.
+- Avance: 2 de 3 rebanadas aceptadas (67 %). R3 en revisión (2026-11-18): la segunda línea por turnos, v0.3.0.
+- Siguiente: JD la ve con `/reload-plugins` y `/avance <slug>`, y la acepta.
 
 ## Contexto
 - `plugins/session-band` ya dibuja una banda encima del prompt (`ui.render` sobre `AbovePrompt`) con `atom`,
@@ -54,6 +30,7 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 |---|---|---|---|---|---|
 | R1 | Con Claude Code abierto en un proyecto con rebanadas, o tras `/avance <slug>` desde `TI`, encima del prompt sale la barra: un segmento por rebanada coloreado por estado, `5/6 aceptadas (83 %)` y la siguiente; al editar un estado en el plan cambia en segundos | `feat/avance-rebanadas-r1` | Claude | — | aceptada |
 | R2 | Desde `TI` sin comando, la barra aparece sola al tocar un archivo de un proyecto con rebanadas; al aceptar una sale el aviso «R6 aceptada · 6/6 (100 %)» y al 100 % cambia de color | `feat/avance-rebanadas-r2` | Claude | R1 | aceptada |
+| R3 | La segunda línea dice de quién es el turno: «Te toca: ver R3» primero, «Trabajando en R3 · <tarea>» con la tarea del agente, «Sigue: R4 · di adelante» y «lista para entregar» (v0.3.0) | `feat/avance-rebanadas-r3` | Claude | R2 | en revisión |
 
 **Archivos compartidos y su dueño:**
 - `.claude-plugin/marketplace.json` y `README.md` de la raíz → R1. R2 solo sube la versión.
@@ -141,6 +118,22 @@ de mods: ADR-0026 (D3: revisión con `ti-guardarrailes` antes de entrar al marke
 | Funciona trabajando desde la raíz `TI` | R1 con `/avance`, R2 sola |
 | Momento de aceptar visible | R2 (aviso y 100 %) |
 | Mod revisado antes de entrar al marketplace (ADR-0026 D3) | R1 y R2 |
+
+### R3 — La segunda línea, por turnos (pedida por JD el 2026-11-18, tras el video `60-explicaciones/avance-rebanadas/barra-por-turnos`)
+- **Qué verás:** con `/avance <slug>`, la segunda línea dice de quién es el turno; al editar los estados del plan cambia
+  sola entre «Te toca», «Trabajando» y «Sigue»; mientras el agente trabaja, la tarea cambia en vivo.
+- **Qué falta:** nada del pedido. Con dos rebanadas en curso muestra la primera con «(+1)»: el mod no sabe a cuál
+  pertenece cada tarea.
+- **Archivos:** `types/index.d.ts` (`Turno`, `tarea`, `accion`), `hooks/plan.ts` (`turno`, `lineaDelTurno`,
+  `tareaEnCurso`), `hooks/register.tsx` (anotar la tarea en `tool.call`, dibujar la línea), las dos pruebas, `README.md`,
+  `plugin.json` y `marketplace.json` (0.3.0).
+- **Contratos:** prioridad en revisión > en curso > pendiente > lista. Tarea: `TodoWrite` en curso (`activeForm`) o
+  `TaskUpdate/TaskCreate` en curso > descripción de `Bash` > «Editando <archivo>» > «qué verás».
+- **Escenarios:** ninguno.
+- **Pruebas:** `plan.test.ts` (turno, línea, tarea de la lista) y `register.test.tsx` (la tarea de las tres fuentes; te
+  toca gana a en curso). Terminado: `claude plugin test` → 28 pasan, 0 fallan; `claude plugin validate` limpio.
+- **Riesgos:** una descripción de comando larga se corta al ancho: la línea trunca al final.
+- **Rama y PR:** `feat/avance-rebanadas-r3`, base `conaltura`. **Quién:** Claude. **Revisión:** normal.
 
 ## Plan de pruebas
 - Unitarias: `claude plugin test plugins/avance-rebanadas` (lectura del plan y banda en terminal y escritorio).

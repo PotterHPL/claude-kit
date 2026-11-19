@@ -1,6 +1,18 @@
 import { expect, test } from 'claude-code/testing'
 
-import { leerAvance, leerRutaLocal, padre, porcentaje, recienAceptadas, rutaAbsoluta, siguiente, unir } from './plan'
+import {
+  leerAvance,
+  leerRutaLocal,
+  lineaDelTurno,
+  padre,
+  porcentaje,
+  recienAceptadas,
+  rutaAbsoluta,
+  siguiente,
+  tareaEnCurso,
+  turno,
+  unir,
+} from './plan'
 
 // Como el plan de mcp-proyectos-dwh: título con paréntesis y columna «Depende de».
 const SEIS = `# Plan
@@ -105,4 +117,41 @@ test('recién aceptadas: solo las que cambiaron, y nada sin lectura anterior', (
   expect(recienAceptadas(antes, despues).map(r => r.id)).toEqual(['R1'])
   expect(recienAceptadas(null, despues)).toEqual([])
   expect(recienAceptadas(despues, despues)).toEqual([])
+})
+
+const tabla = (estados: string[]) =>
+  leerAvance(
+    ['## Rebanadas', '| # | Qué verás | Estado |', '|---|---|---|', ...estados.map((e, i) => `| R${i + 1} | P${i + 1} | ${e} |`)].join('\n'),
+  )!
+
+test('turno: revisión gana a en curso, en curso gana a pendiente, y al final lista', () => {
+  expect(turno(tabla(['aceptada', 'en curso', 'en revisión']))).toMatchObject({ tipo: 'te-toca', mas: 0 })
+  expect(turno(tabla(['en revisión', 'en revisión', 'en curso']))).toMatchObject({ tipo: 'te-toca', mas: 1 })
+  expect(turno(tabla(['aceptada', 'pendiente', 'en curso', 'en curso']))).toMatchObject({ tipo: 'trabajando', mas: 1 })
+  expect(turno(tabla(['aceptada', 'pendiente', 'pendiente']))).toMatchObject({ tipo: 'sigue' })
+  expect(turno(tabla(['aceptada', 'aceptada']))).toEqual({ tipo: 'lista' })
+})
+
+test('la línea de cada turno: título, detalle y tono', () => {
+  expect(lineaDelTurno(turno(tabla(['aceptada', 'en revisión'])), null)).toEqual({
+    titulo: '● Te toca: ver R2',
+    detalle: '· P2',
+    tono: 'revision',
+  })
+  expect(lineaDelTurno(turno(tabla(['en curso'])), 'Corriendo las pruebas').detalle).toBe('· Corriendo las pruebas')
+  expect(lineaDelTurno(turno(tabla(['en curso'])), null).detalle).toBe('· P1')
+  expect(lineaDelTurno(turno(tabla(['aceptada', 'pendiente'])), 'x')).toEqual({
+    titulo: '○ Sigue: R2',
+    detalle: '· P2 · di «adelante»',
+    tono: 'sigue',
+  })
+  expect(lineaDelTurno({ tipo: 'lista' }, null).tono).toBe('lista')
+})
+
+test('tarea en curso de una lista TodoWrite', () => {
+  expect(tareaEnCurso([{ status: 'in_progress', activeForm: 'Corriendo las pruebas', content: 'Correr' }])).toBe(
+    'Corriendo las pruebas',
+  )
+  expect(tareaEnCurso([{ status: 'completed', activeForm: 'x' }])).toBe(null)
+  expect(tareaEnCurso('nada')).toBe(null)
 })
