@@ -45,7 +45,7 @@
     "bandMascot": {
       "type": "string",
       "title": "Mascot on the band",
-      "description": "on: while agents work, the band is four rows tall with the wizard (classic style) or the servo skull (cyberpunk) at its end; off: the one-row band",
+      "description": "on: while agents work, the band is three rows tall with the wizard (classic style) or the servo skull (cyberpunk) at its end; off: the one-row band",
       "default": "on",
       "options": [
         "on",

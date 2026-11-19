@@ -8,7 +8,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
 ## Relevo
 - Avance: 3 de 4 rebanadas aceptadas (75 %).
 - R1 (PR #16), R2 (PR #17) y R3 (PR #18) aceptadas el 2026-11-19. En R3, JD vio el cromo, el camuflaje y la calavera.
-- R4 en revisión: barra de 4 líneas con el mago o la calavera (`bandMascot`), acentos neón y lluvia en cyberpunk,
+- R4 en revisión: barra de 3 líneas con el mago o la calavera redibujados a 7 × 6 (D11; JD vio la de 4 demasiado
+  grande) (`bandMascot`), acentos neón y lluvia en cyberpunk,
   versión `1.3.0-conaltura.1`. 77 pruebas pasan. Siguiente: JD la ve con `/reload-plugins` en los dos estilos.
 - Pendiente fuera del fork: registrar el commit revisado en `ti-guardarrailes/references/mods.md` (TI) al cerrar R4.
 - Maqueta aprobada: `docs/diseno/cuadrilla-neon.html` · https://claude.ai/code/artifact/bba422e8-5b60-4f5f-82bc-cb88b1ccfae4 (v9).
@@ -25,6 +26,8 @@ ADR-0026. El estilo lo fija `/estilo` (plantilla de cierre, ADR-0037 del repo TI
   Explore.
 - **D8** · Cyberpunk: cangrejo de cromo en fork, camuflaje óptico en Explore.
 - **D9** · Clásico: el mago camina en la barra y sigue vistiendo al consejero.
+- **D11** · La mascota de la barra se redibuja a mano a 7 × 6 pixeles: la barra mide 3 líneas, no 4 (JD,
+  2026-11-19, tras verla).
 - **D10** · En la terminal, la barra crece a 4 líneas con su mascota mientras trabajan agentes. Va detrás de la opción
   `bandMascot` (`on` por defecto): si no gusta, se apaga y vuelve la barra de 1 línea.
 

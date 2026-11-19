@@ -472,12 +472,40 @@ const BRAILLE_BIT = [
   [0x08, 0x10, 0x20, 0x80],
 ]
 const BAND_SPIN_KEY = 'band-spin'
-// The band's mascot (D10): at the end of the band, four rows tall, while agents work. The wizard in the
+// The band's mascot (D10): at the end of the band, three rows tall (D11), while agents work. The wizard in the
 // classic style (D9), the servo skull in cyberpunk (D5). The `bandMascot` option turns it off.
 const BAND_MASCOT_KEY = 'band-mascot'
 const MASCOT_MIN_COLUMNS = 60
 let bandMascot = true
 const mascotOf = (): string => (estilo === 'cyberpunk' ? 'cyber-calavera' : 'savvy-mago')
+// In the terminal the band's mascot is redrawn by hand at 7 × 6 pixels, three rows (D11, JD found the
+// 9 × 8 skull too big): halving a sprite blurs the faces. The desktop keeps the full crab size.
+const BAND_MASCOT = { columns: 7, rows: 3 }
+type MascotMini = { rows: string[]; frames: [x: number, y: number, ch: string][][]; palette: Record<string, string> }
+// A function, not a constant: the palettes it uses are declared further down the module.
+const mascotMini = (): Record<Estilo, MascotMini> => ({
+  // The wizard: starred hat, staff with an orb; the orb glows and the star twinkles.
+  clasico: {
+    palette: { c: CLAY, k: INK, p: '#B382FF', Z: '#F5C542', y: '#F5C542', L: '#DBFF69', d: '#7A4A26', w: '#F8F6F1' },
+    rows: ['..pZp..', 'Lppppp.', 'dccccc.', 'dckckc.', 'ccccccc', '.c.c.c.'],
+    frames: [[], [[0, 1, 'Z']], [[0, 1, 'w'], [3, 0, 'y']], [[0, 1, 'Z']]],
+  },
+  // The servo skull: sockets, the red optic, teeth and the thruster's glow; the optic glints.
+  cyberpunk: {
+    palette: { ...CYBER_PALETTE, h: '#E8E2CF' },
+    rows: ['.hhhhh.', 'hkkhrrh', 'hkkhrrh', 'hhhkhhh', '.hkhkh.', '..nNn..'],
+    frames: [[[5, 1, 'w']], [[6, 1, 'w'], [2, 5, 'N'], [3, 5, 'n'], [4, 5, 'N']], [[5, 1, 'w'], [6, 1, 'w'], [5, 2, 'w'], [6, 2, 'w']], []],
+  },
+})
+const mascotCells = (frame: number | null): Cells => {
+  const m = mascotMini()[estilo]
+  const rows = m.rows.map(r => [...r])
+  for (const [x, y, ch] of frame === null ? [] : (m.frames[frame % m.frames.length] ?? [])) {
+    const row = rows[y]
+    if (row && x < row.length) row[x] = ch
+  }
+  return toCells(paint(f => stamp(f, 0, 0, rows.map(r => r.join('')), m.palette), BAND_MASCOT.columns, BAND_MASCOT.rows * 2))
+}
 // The band's own id, as its render hook last saw it: what a blit names to repaint the spinner.
 let bandRequestId = ''
 
@@ -1395,8 +1423,7 @@ export const register: Register = (on, options) => {
           const { cells } = spinnerCells(Math.floor(ms / FRAME_MS) % SPIN_PATH.length)
           await $.ui.blit({ requestId: bandRequestId, key: BAND_SPIN_KEY, cells }).catch(() => undefined)
           if (bandMascot) {
-            const mascot = crabCells(mascotOf(), frameAt(ms), true).cells
-            await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascot }).catch(() => undefined)
+            await $.ui.blit({ requestId: bandRequestId, key: BAND_MASCOT_KEY, cells: mascotCells(frameAt(ms)) }).catch(() => undefined)
           }
         }
         if (crabMode === 'off') return
@@ -1902,7 +1929,7 @@ export const register: Register = (on, options) => {
       const { Raster } = ui
       const nowMs = await read($, now)
       const hasMascot = bandMascot && cols >= MASCOT_MIN_COLUMNS
-      const trackW = Math.max(12, cols - titleW - 22 - (hasMascot ? ROW_CRAB.columns + 1 : 0))
+      const trackW = Math.max(12, cols - titleW - 22 - (hasMascot ? BAND_MASCOT.columns + 1 : 0))
       const track = bandTrackCells(f, trackW, Math.floor(nowMs / 1000))
       bandRequestId = e.requestId
       const spin = spinnerCells(isWorking ? Math.floor((await read($, now)) / FRAME_MS) % SPIN_PATH.length : null)
@@ -1921,13 +1948,13 @@ export const register: Register = (on, options) => {
           {!isBatch && dismiss}
         </Box>
       )
-      const mascot = crabCells(mascotOf(), isWorking ? frameAt(nowMs) : null, true)
+      const mascot = mascotCells(isWorking ? frameAt(nowMs) : null)
       return (
         <Box flexDirection="column">
           {hasMascot ? (
             <Box flexDirection="row" alignItems="center" gap={1}>
               {row}
-              <Raster key={BAND_MASCOT_KEY} columns={ROW_CRAB.columns} rows={ROW_CRAB.rows} cells={mascot.cells} />
+              <Raster key={BAND_MASCOT_KEY} columns={BAND_MASCOT.columns} rows={BAND_MASCOT.rows} cells={mascot.cells} />
             </Box>
           ) : (
             row
